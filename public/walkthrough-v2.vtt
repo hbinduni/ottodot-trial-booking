@@ -1,0 +1,333 @@
+WEBVTT
+
+1
+00:00:00.050 --> 00:00:04.197
+Welcome to this walkthrough of the Ottodot trial booking project.
+
+2
+00:00:04.197 --> 00:00:09.039
+This video uses generated English narration and automated screen capture.
+
+3
+00:00:09.039 --> 00:00:15.118
+The application runs with React, a Hono API, and a persistent SQLite database.
+
+4
+00:00:15.118 --> 00:00:19.855
+A parent can choose a child, book a trial, and record a mock payment.
+
+5
+00:00:19.855 --> 00:00:22.328
+Teachers see confirmed learners only.
+
+6
+00:00:22.328 --> 00:00:27.315
+The central rule is that each trial class has at most four confirmed students.
+
+7
+00:00:28.430 --> 00:00:34.024
+Starting with Amy and her child Ava, the Space explorers class has seats available.
+
+8
+00:00:34.024 --> 00:00:36.340
+Book trial opens a pending booking.
+
+9
+00:00:36.340 --> 00:00:41.643
+At this point, no seat is reserved and Ava is not on the teacher roster.
+
+10
+00:00:41.643 --> 00:00:45.630
+The simulator makes success and failure easy to demonstrate.
+
+11
+00:00:45.630 --> 00:00:50.248
+Choosing a failed payment records the attempt and keeps Ava unenrolled.
+
+12
+00:00:50.248 --> 00:00:53.814
+The interface explains that she can retry the same booking.
+
+13
+00:00:54.940 --> 00:00:59.271
+A successful retry checks availability again and confirms Ava.
+
+14
+00:00:59.271 --> 00:01:04.245
+The booking now has one failed attempt and one successful attempt in its history.
+
+15
+00:01:04.245 --> 00:01:09.850
+Closing the panel and opening the same class returns the existing booking reference.
+
+16
+00:01:09.850 --> 00:01:12.179
+My bookings provides the same record.
+
+17
+00:01:12.179 --> 00:01:20.232
+The distinction matters: booking status describes the current enrollment, while payment history preserves what happened during each attempt.
+
+18
+00:01:21.374 --> 00:01:24.060
+Now for the required last-seat scenario.
+
+19
+00:01:24.060 --> 00:01:29.245
+Fun with fractions starts with three confirmed children and just one seat available.
+
+20
+00:01:29.245 --> 00:01:32.758
+Amy starts a booking for Ava but does not complete payment.
+
+21
+00:01:32.758 --> 00:01:36.889
+This is parent A. Opening checkout does not give A priority.
+
+22
+00:01:36.889 --> 00:01:40.205
+The displayed availability is only a snapshot.
+
+23
+00:01:40.205 --> 00:01:46.060
+A different parent can still complete a successful payment and claim that final seat before A does.
+
+24
+00:01:47.208 --> 00:01:53.315
+In a separate browser session, Ben chooses Noah and starts a booking for the same fractions class.
+
+25
+00:01:53.315 --> 00:01:54.697
+This is parent B.
+
+26
+00:01:54.697 --> 00:01:59.052
+Both bookings are pending, but there is still only one available seat.
+
+27
+00:01:59.052 --> 00:02:02.197
+Ben completes the successful mock payment first.
+
+28
+00:02:02.197 --> 00:02:03.855
+Noah becomes confirmed.
+
+29
+00:02:03.855 --> 00:02:12.908
+The server makes this decision inside a database transaction, so the later payment must observe the capacity after Noah has taken the seat.
+
+30
+00:02:14.042 --> 00:02:19.728
+Returning to Amy, the successful mock payment is now recorded after the class has filled.
+
+31
+00:02:19.728 --> 00:02:23.084
+Ava receives refund required instead of confirmed.
+
+32
+00:02:23.084 --> 00:02:28.689
+The message explicitly says that a refund has not been issued and Ava is not enrolled.
+
+33
+00:02:28.689 --> 00:02:35.281
+Opening the teacher roster shows exactly four children: Eli, Mia, Noah, and Zoe.
+
+34
+00:02:35.281 --> 00:02:36.702
+Ava is excluded.
+
+35
+00:02:36.702 --> 00:02:42.307
+Payment success and successful enrollment are separate outcomes when capacity has run out.
+
+36
+00:02:43.442 --> 00:02:49.089
+Another important failure happens when the server commits but the browser loses the response.
+
+37
+00:02:49.089 --> 00:02:54.813
+Here, the recording deliberately drops a payment response after the server records success.
+
+38
+00:02:54.813 --> 00:02:59.326
+The interface keeps the original request key and offers recovery.
+
+39
+00:02:59.326 --> 00:03:02.707
+Reloading preserves both the booking and that key.
+
+40
+00:03:02.707 --> 00:03:08.707
+Retrying the same request recovers the confirmed result with one recorded payment attempt.
+
+41
+00:03:08.707 --> 00:03:14.194
+This avoids guessing whether an uncertain payment should be sent again as a new charge.
+
+42
+00:03:15.309 --> 00:03:17.759
+The core logic is in recordPayment.
+
+43
+00:03:17.759 --> 00:03:23.798
+The immediate transaction acquires the database write lock before reading class capacity.
+
+44
+00:03:23.798 --> 00:03:30.298
+It checks ownership, looks for an existing payment key, and rejects new commands for terminal bookings.
+
+45
+00:03:30.298 --> 00:03:36.745
+It then checks the class start time and remaining seats, updates the booking, and inserts the payment attempt.
+
+46
+00:03:36.745 --> 00:03:39.890
+Both writes commit together or roll back together.
+
+47
+00:03:39.890 --> 00:03:46.114
+SQLite serializes writers, including separate processes using the same database file.
+
+48
+00:03:47.219 --> 00:03:49.971
+The schema provides a second line of defense.
+
+49
+00:03:49.971 --> 00:03:55.497
+A unique constraint permits one booking per child and class across all statuses.
+
+50
+00:03:55.497 --> 00:03:58.853
+Failed payments therefore retry the existing row.
+
+51
+00:03:58.853 --> 00:04:00.879
+Payment keys are also unique.
+
+52
+00:04:00.879 --> 00:04:09.932
+Capacity triggers reject a fifth confirmed booking on either insertion or update, even if a future writer bypasses the service.
+
+53
+00:04:09.932 --> 00:04:16.866
+Foreign keys preserve relationships, and explicit status checks prevent inconsistent payment outcomes.
+
+54
+00:04:16.866 --> 00:04:20.905
+Confirmed and refund required are terminal in this slice.
+
+55
+00:04:22.053 --> 00:04:27.700
+An identical payment key replays the original attempt alongside the current booking state.
+
+56
+00:04:27.700 --> 00:04:32.516
+Reusing that key with another booking or a different outcome returns a conflict.
+
+57
+00:04:32.516 --> 00:04:39.595
+There is a subtle case worth explaining: an old failed attempt can be replayed after a later successful retry.
+
+58
+00:04:39.595 --> 00:04:44.226
+The old attempt must stay failed, but the booking must remain confirmed.
+
+59
+00:04:44.226 --> 00:04:47.345
+The browser displays those two facts separately.
+
+60
+00:04:47.345 --> 00:04:53.147
+A different key against a terminal booking is refused before another mock payment is recorded.
+
+61
+00:04:54.253 --> 00:05:03.663
+The repository check passes formatting and lint rules, strict TypeScript checks, thirty tests with ninety nine assertions, and the production build.
+
+62
+00:05:03.663 --> 00:05:09.992
+The concurrency test starts eight independent Bun processes with separate database connections.
+
+63
+00:05:09.992 --> 00:05:12.676
+A readiness barrier releases them together.
+
+64
+00:05:12.676 --> 00:05:17.295
+Exactly one wins the last seat and seven require refunds.
+
+65
+00:05:17.295 --> 00:05:22.505
+Another test sends five concurrent copies of the same key and records one attempt.
+
+66
+00:05:22.505 --> 00:05:31.650
+Additional tests cover ownership, invalid input, started classes, database lock errors, persistence, and atomic rollback.
+
+67
+00:05:32.763 --> 00:05:37.265
+This is a synchronous mock payment command, not a real provider webhook.
+
+68
+00:05:37.265 --> 00:05:38.884
+No real money moves.
+
+69
+00:05:38.884 --> 00:05:48.713
+A production payment integration would need verified provider events, amount and currency checks, durable event deduplication, and refund reconciliation.
+
+70
+00:05:48.713 --> 00:05:52.068
+Network calls must stay outside the database lock.
+
+71
+00:05:52.068 --> 00:05:58.160
+Temporary holds or authorization before capture could improve the last-seat experience.
+
+72
+00:05:58.160 --> 00:06:03.265
+At higher write volume, PostgreSQL could lock individual class rows.
+
+73
+00:06:03.265 --> 00:06:09.555
+Authentication, cancellation, and refund execution remain outside this take-home slice.
+
+74
+00:06:10.673 --> 00:06:13.333
+The demo is also available on Cloudflare.
+
+75
+00:06:13.333 --> 00:06:22.123
+A Worker serves the frontend and routes API requests to one SQLite Durable Object shared by every parent and class.
+
+76
+00:06:22.123 --> 00:06:25.557
+It runs the same booking service and schema shown here.
+
+77
+00:06:25.557 --> 00:06:32.820
+Locally, Bun uses an immediate transaction; Cloudflare uses its native synchronous transaction API.
+
+78
+00:06:32.820 --> 00:06:35.438
+Bookings persist across redeployments.
+
+79
+00:06:35.438 --> 00:06:44.373
+Most implementation code was generated with Codex, alongside tests, documentation, illustrations, and this narrated walkthrough.
+
+80
+00:06:44.373 --> 00:06:49.991
+The AI usage file records those contributions and the corrections made during review.
+
+81
+00:06:49.991 --> 00:06:58.675
+The completed solution demonstrates safe last-seat allocation, recoverable payment requests, and a roster drawn from confirmed bookings.
+
+82
+00:06:58.675 --> 00:07:05.715
+The public repository includes setup instructions and test evidence, and the live app is linked in the README.
+
+83
+00:07:05.715 --> 00:07:06.965
+Thank you for watching.

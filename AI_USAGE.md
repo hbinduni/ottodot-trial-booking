@@ -29,7 +29,9 @@ Agent review and tests identified these corrections; the candidate provided the 
 
 The two class illustrations were generated and saved as WebP images. The walkthrough uses Microsoft Andrew Neural through `edge-tts`, automated browser capture against a separate demo database, and FFmpeg for assembly. The voice is generated, not the candidate speaking. That disclosure appears in the video and its player.
 
-The [video and captions](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1) are public GitHub Release assets. The [transcript](docs/narration.md) preserves the spoken wording.
+The final chapter was later revised to explain Cloudflare storage and close with a summary of the completed solution. The earlier demonstrations were retained.
+
+The [video and captions](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v2) are public GitHub Release assets. The [transcript](docs/narration.md) preserves the spoken wording.
 
 ## What could improve the process
 

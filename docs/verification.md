@@ -46,14 +46,16 @@ The deployed bundle contained neither the test fixture nor Bun's SQLite import. 
 
 ## Walkthrough video
 
-The [published walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) runs for 6 minutes 47 seconds at 1920 × 1080, with H.264 video and AAC audio. Its 13 chapters show app interactions, code, test output, tradeoffs, and the AI disclosure. It uses clearly labeled generated English narration and a separate demo database.
+The revised [walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) runs for 7 minutes 8 seconds at 1920 × 1080, with H.264 video and AAC audio. It retains the first 12 chapters of app interactions, code, test output, and tradeoffs. The final chapter explains the Cloudflare deployment, discloses AI assistance, and summarizes the completed solution.
 
-The complete MP4 decoded without errors. Browser checks confirmed playback, chapter seeking, all 79 WebVTT caption cues, and a download fallback when the video request was blocked. Desktop and 390-pixel layouts had no page errors or horizontal overflow. Sampled app, code, and test frames were checked for legibility.
+The revision uses the same generated English voice. All 83 caption cues were checked for order and timing. The complete MP4 decoded without errors, and frames from the new ending were inspected for legibility. Browser checks against a local preview confirmed playback, seeking to the final chapter, caption loading, and layouts at desktop and 390-pixel widths without page errors or horizontal overflow.
 
-An unauthenticated GitHub API request confirmed the public release and all three assets: the 18,884,896-byte MP4, SRT captions, and checksums. GitHub's MP4 digest matched the local SHA-256:
+The repository gate passed again after the update: 30 tests, 99 assertions, both TypeScript targets, Biome, and the frontend build. The transcript, player duration, chapter timestamps, and caption file were updated together. The original caption asset remains available for browsers with a cached copy of the previous player.
+
+The revised MP4 is 19,118,169 bytes. Its SHA-256 is:
 
 ```text
-adaa5139e6e3de196eecceace9f701888087fe21e24b1816caed0ce4c48545e0
+324af5007823679d3fd0aaf4beb3ad6d3218b6c2b74c6ac50f4f7dd23c2fbf5d
 ```
 
-The MP4 is a [GitHub Release asset](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1), so cloning the repository doesn't download the video or require Git LFS. The [transcript](narration.md) is included in the repository.
+The MP4, SRT captions, and checksums are distributed as [GitHub Release assets](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v2). Cloning the repository doesn't download the video or require Git LFS. The [transcript](narration.md) is included in the repository. The [original release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1) remains available.

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Watch the 6-minute Ottodot project walkthrough, with generated English narration, captions, and chapter navigation." />
+    <meta name="description" content="Watch the 7-minute Ottodot project walkthrough, with generated English narration, captions, and chapter navigation." />
     <title>Ottodot · Video walkthrough</title>
     <style>
       * { box-sizing: border-box; }
@@ -39,40 +39,40 @@
       <header>
         <div>
           <h1>Ottodot · Project walkthrough</h1>
-          <p>6 minutes 47 seconds · 1080p · English captions</p>
+          <p>7 minutes 8 seconds · 1080p · English captions</p>
         </div>
         <span class="tag">Generated English narration</span>
       </header>
       <div class="content">
         <section aria-label="Walkthrough video">
-          <video id="video" controls playsinline preload="metadata" aria-label="Ottodot project walkthrough with generated narration and captions" src="https://github.com/hbinduni/ottodot-trial-booking/releases/download/walkthrough-v1/ottodot-walkthrough.mp4">
-            <track kind="captions" src="walkthrough.vtt" srclang="en" label="English" />
+          <video id="video" controls playsinline preload="metadata" aria-label="Ottodot project walkthrough with generated narration and captions" src="https://github.com/hbinduni/ottodot-trial-booking/releases/download/walkthrough-v2/ottodot-walkthrough.mp4">
+            <track kind="captions" src="walkthrough-v2.vtt" srclang="en" label="English" />
             Your browser doesn't support this player. Use the Download MP4 link below.
           </video>
           <p id="playback-notice" role="status" hidden></p>
           <div class="links">
-            <a href="https://github.com/hbinduni/ottodot-trial-booking/releases/download/walkthrough-v1/ottodot-walkthrough.mp4">Download MP4 · 18 MB</a>
+            <a href="https://github.com/hbinduni/ottodot-trial-booking/releases/download/walkthrough-v2/ottodot-walkthrough.mp4">Download MP4 · 19 MB</a>
             <a href="https://github.com/hbinduni/ottodot-trial-booking/blob/main/docs/narration.md">Read transcript</a>
-            <a href="https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1">GitHub release &amp; captions</a>
+            <a href="https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v2">GitHub release &amp; captions</a>
           </div>
           <p class="note">This walkthrough uses synthetic families and mock payments. The voice is computer-generated. Captions are included in the picture.</p>
-          <p class="note">The recording shows the local Bun/SQLite app. The Cloudflare app uses the same booking rules with Durable Object transactions. <a href="https://github.com/hbinduni/ottodot-trial-booking/blob/main/docs/cloudflare.md">Read about the deployment</a>.</p>
+          <p class="note">The app demonstrations show the local Bun/SQLite runtime. The final chapter explains the Cloudflare deployment and summarizes the completed solution. <a href="https://github.com/hbinduni/ottodot-trial-booking/blob/main/docs/cloudflare.md">Read about the deployment</a>.</p>
         </section>
         <aside aria-label="Video chapters">
           <h2>Jump to a chapter</h2>
-          <button type="button" data-time="0"><span>00:00</span>Scope and app navigation</button>
-          <button type="button" data-time="28.38"><span>00:28</span>Create a booking and handle failure</button>
-          <button type="button" data-time="54.89"><span>00:54</span>Retry, confirm, and reopen</button>
-          <button type="button" data-time="81.31"><span>01:21</span>Last seat: parent A starts first</button>
-          <button type="button" data-time="107.13"><span>01:47</span>Parent B completes first</button>
-          <button type="button" data-time="133.95"><span>02:13</span>Parent A needs a refund</button>
-          <button type="button" data-time="163.34"><span>02:43</span>Recover a lost payment response</button>
-          <button type="button" data-time="195.20"><span>03:15</span>Atomic confirmation in SQLite</button>
-          <button type="button" data-time="227.11"><span>03:47</span>Database constraints</button>
-          <button type="button" data-time="261.93"><span>04:21</span>Idempotency and payment history</button>
-          <button type="button" data-time="294.13"><span>04:54</span>Tests and concurrency evidence</button>
-          <button type="button" data-time="332.64"><span>05:32</span>Tradeoffs and production boundaries</button>
-          <button type="button" data-time="370.55"><span>06:10</span>AI use and final review</button>
+          <button type="button" data-time="0.000"><span>00:00</span>Scope and app navigation</button>
+          <button type="button" data-time="28.380"><span>00:28</span>Create a booking and handle failure</button>
+          <button type="button" data-time="54.890"><span>00:54</span>Retry, confirm, and reopen</button>
+          <button type="button" data-time="81.324"><span>01:21</span>Last seat: parent A starts first</button>
+          <button type="button" data-time="107.158"><span>01:47</span>Parent B completes first</button>
+          <button type="button" data-time="133.992"><span>02:13</span>Parent A needs a refund</button>
+          <button type="button" data-time="163.392"><span>02:43</span>Recover a lost payment response</button>
+          <button type="button" data-time="195.259"><span>03:15</span>Atomic confirmation in SQLite</button>
+          <button type="button" data-time="227.169"><span>03:47</span>Database constraints</button>
+          <button type="button" data-time="262.003"><span>04:22</span>Idempotency and payment history</button>
+          <button type="button" data-time="294.203"><span>04:54</span>Tests and concurrency evidence</button>
+          <button type="button" data-time="332.713"><span>05:32</span>Tradeoffs and production boundaries</button>
+          <button type="button" data-time="370.623"><span>06:10</span>Cloudflare deployment and project summary</button>
         </aside>
       </div>
     </main>

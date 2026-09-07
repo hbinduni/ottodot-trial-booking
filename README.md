@@ -4,9 +4,9 @@ A take-home project for booking children's trial classes. Parents choose a child
 
 The main challenge is what happens when two parents want the last seat. This project handles that case alongside duplicate bookings, failed payments, and retries after a lost response.
 
-**[Open the live demo](https://ottodot-trial-booking.lina-duni.workers.dev)** · **[Watch the walkthrough · 6:47](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html)** · [How it works](#how-the-solution-works) · [Run locally](#run-locally) · [Deploy to Cloudflare](#cloudflare-deployment)
+**[Open the live demo](https://ottodot-trial-booking.lina-duni.workers.dev)** · **[Watch the walkthrough · 7:08](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html)** · [How it works](#how-the-solution-works) · [Run locally](#run-locally) · [Deploy to Cloudflare](#cloudflare-deployment)
 
-The walkthrough has generated English narration, captions, and chapter navigation. You can also [download the MP4 from GitHub](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1) or [read the transcript](docs/narration.md). See [AI usage](AI_USAGE.md) for the disclosure.
+The walkthrough has generated English narration, captions, and chapter navigation. You can also [download the MP4 from GitHub](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v2) or [read the transcript](docs/narration.md). See [AI usage](AI_USAGE.md) for the disclosure.
 
 ## Try it out
 
