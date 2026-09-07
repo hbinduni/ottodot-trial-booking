@@ -2,6 +2,8 @@
 
 A small, persistent trial booking demo. Parents choose a child and a class, record a mock payment, and see the booking outcome. The teacher roster includes confirmed children only, with a hard limit of four per class.
 
+**Try the deployed app:** [Open Ottodot on Cloudflare](https://ottodot-trial-booking.lina-duni.workers.dev). No installation or Cloudflare login is needed. Select a demo parent and child to try bookings; all identities and payments are synthetic.
+
 The main decision: **a pending booking does not reserve a seat**. The first successful payment transaction to secure the last seat confirms; another successful payment records a refund obligation and never enters the roster.
 
 ## Run locally
@@ -28,14 +30,58 @@ Optional configuration is documented in [.env.example](.env.example). Copy it to
 
 ## Cloudflare deployment
 
-Live app: [ottodot-trial-booking.lina-duni.workers.dev](https://ottodot-trial-booking.lina-duni.workers.dev).
+### Access the deployed app
 
-The app also runs on Cloudflare Workers with static frontend assets and one persistent SQLite Durable Object. The HTTP handlers, booking rules, schema, and seeds are shared with the local Bun version. See [deployment instructions and runtime differences](docs/cloudflare.md).
+- [Live app](https://ottodot-trial-booking.lina-duni.workers.dev): Explore classes, My bookings, and Teacher roster.
+- [API health](https://ottodot-trial-booking.lina-duni.workers.dev/api/health): returns `{"status":"ok","mode":"synthetic-demo"}` when the API and database are available.
+- [Cloudflare dashboard](https://dash.cloudflare.com/): sign in to the owning account, then open **Workers & Pages → ottodot-trial-booking → Deployments** to inspect deployed versions and their traffic allocation. Dashboard access requires account permissions; the live app is public.
+
+The public demo shares its synthetic bookings across visitors. Seats and class dates persist between visits and deployments. Use fresh local seed data for repeatable interview scenarios.
+
+### Deploy or update the app
+
+Requires Bun **1.4.0**, Node.js supported by Wrangler (verified with **24.20.0**), and a Cloudflare account with permission to deploy Workers and SQLite Durable Objects. Run these commands from the repository root:
+
+```sh
+bun install --frozen-lockfile
+
+# Authorize the local Wrangler session and confirm the account.
+env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_ACCOUNT_ID bunx wrangler login
+env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_ACCOUNT_ID bunx wrangler whoami
+
+# Replace the placeholder with the intended account ID returned by whoami.
+export CLOUDFLARE_ACCOUNT_ID='<your-account-id>'
+
+# Validate both runtimes, then build and publish the complete app.
+bun run check
+bun run test:cloudflare
+env -u CLOUDFLARE_API_TOKEN bun run deploy:cloudflare
+```
+
+Unset `CLOUDFLARE_API_TOKEN` so an existing environment token cannot override the browser-authorized Wrangler session. For later updates, reuse the session and account selection; run `wrangler login` again if the session expires.
+
+The deploy script builds the Vite frontend, uploads its static assets and Worker, and configures the SQLite Durable Object declared in [wrangler.jsonc](wrangler.jsonc). Wrangler prints the workers.dev URL and a **Version ID** after deployment. Another account gets its own workers.dev subdomain. Git pushes update the repository; deployment is performed explicitly with the command above.
+
+Reusing the same Worker name, Durable Object class, and object name preserves hosted bookings. `bun run seed --reset` resets only the local Bun database. See the [storage lifecycle and deployment runbook](docs/cloudflare.md) before changing those identities or the schema.
+
+### Inspect the deployed version
+
+With the account selected above, inspect Cloudflare's deployment history and a specific version:
+
+```sh
+env -u CLOUDFLARE_API_TOKEN bunx wrangler deployments list --name ottodot-trial-booking
+env -u CLOUDFLARE_API_TOKEN bunx wrangler versions view '<version-id>' --name ottodot-trial-booking
+```
+
+Use the latest deployment's version and traffic allocation to identify what is serving the live URL. A Cloudflare Version ID identifies a Worker artifact; it is separate from a Git commit SHA. The [dated deployment receipt](docs/cloudflare.md#deployment-receipt-8-september-2026) records the versions verified for this submission. See Cloudflare's [versions and deployments guide](https://developers.cloudflare.com/workers/versions-and-deployments/) for the dashboard workflow.
+
+For a local preview of the Cloudflare target:
 
 ```sh
 bun run dev:cloudflare   # build frontend and run the Worker locally
-bun run test:cloudflare  # isolated real-Worker acceptance tests, including restart persistence
 ```
+
+Open the local URL printed by Wrangler. The Cloudflare target shares the HTTP handlers, booking rules, SQL schema, and seeds with the Bun target; [runtime differences](docs/cloudflare.md#runtime-and-storage) are documented in the runbook.
 
 ## Verify
 
