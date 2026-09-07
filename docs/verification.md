@@ -37,4 +37,17 @@ These browser checks were performed using Playwright during development; they ar
 
 ## Submission status
 
-The implementation is published at [hbinduni/ottodot-trial-booking](https://github.com/hbinduni/ottodot-trial-booking). Candidate code review, final personal AI reflection, and the narrated video are not claimed complete by this record. Update the final time total after that work.
+The implementation is published at [hbinduni/ottodot-trial-booking](https://github.com/hbinduni/ottodot-trial-booking). Candidate code review, final personal AI reflection, and public video hosting are not claimed complete by this record. Update the final time total after that work.
+
+## Generated walkthrough, 8 September 2026
+
+At the candidate's explicit request, a video with generated English narration was prepared in approximately 25 minutes. Combined active project work is approximately one and a half hours, excluding idle intervals and future candidate review.
+
+- Final MP4: 6 minutes 47 seconds, 1920 × 1080, H.264 video with AAC audio, approximately 18 MB.
+- Thirteen chapters cover actual app interactions, last-seat completion order, payment failure/retry, lost-response recovery, source excerpts, test output, tradeoffs, and AI disclosure.
+- Browser recording used an isolated database and preserved the existing development data. Recording assertions checked the confirmed roster and one-attempt recovery invariant.
+- English narration uses a standard synthetic voice and is explicitly labeled. Captions use speech-service timestamps; a [transcript](narration.md) is included in Git.
+- The complete MP4 decoded without media errors. Browser playback loaded a 407.45-second, 1080p stream without errors. Sampled app, code, test, and closing frames were inspected for legibility.
+- `bun run check:all:fix` passed after documentation and generated-artifact exclusions were added: 30 tests, 99 assertions, lint, types, and build.
+
+The video and local review player are generated artifacts, excluded from Git. Candidate review and a shareable hosting link remain separate from creating the file.

@@ -168,6 +168,8 @@ With more time: authenticated parent/teacher roles; a real payment adapter with 
 
 ## Time and submission notes
 
-Time spent so far: **approximately one hour** of active AI-assisted implementation, UI refinement, documentation, review, and verification on 7 September 2026. This is an estimate across two working sessions, excluding the idle interval. Candidate review and recording time must be added to the final four-hour total; the recording has not been created by the implementation agent. See [verification.md](docs/verification.md).
+Time spent so far: **approximately one and a half hours** of active AI-assisted implementation, UI refinement, documentation, verification, and generated-video preparation on 7–8 September 2026. This is an estimate across working sessions, excluding idle intervals. Add candidate review and any further recording/editing time to the final four-hour total. See [verification.md](docs/verification.md).
 
 See [AI_USAGE.md](AI_USAGE.md) for tool use and corrections, and [the walkthrough guide](docs/walkthrough.md) for a 5–8 minute recording plan.
+
+A [narration transcript](docs/narration.md) accompanies the generated-voice walkthrough. Video binaries are kept outside Git; the submission needs a separately accessible video link.

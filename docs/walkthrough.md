@@ -2,6 +2,8 @@
 
 Record your own screen and explanation. Use the points below as prompts, not a script to read verbatim. Verify that you can explain the transaction and the real-payment boundary before submitting.
 
+At the candidate's request, a generated-English-voice review copy was also prepared with automated app interactions and captions. Its [transcript](narration.md) discloses the voice and AI assistance. Review that copy before choosing it for submission; the personal recording guide below remains available if you prefer your own narration.
+
 ## Prepare
 
 1. Review `server/bookings.ts`, `server/schema.sql`, and the last-seat tests.
