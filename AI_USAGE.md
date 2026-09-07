@@ -30,6 +30,8 @@ A useful improvement would be to agree the payment boundary and a concise accept
 
 ## Verification
 
+At the candidate's request, Codex added the Cloudflare deployment target: a Worker with static assets and one SQLite Durable Object, sharing the original service and schema. The candidate completed the local Wrangler browser login and selected the default workers.dev address. Runtime acceptance tests exposed a request-stream failure after oversized input; bounded buffering before Durable Object forwarding resolved it, with fixed-length and chunked request regression checks. The original Bun target and tests remain supported.
+
 - Ran the repository gate: Biome, strict TypeScript, real SQLite/Hono tests, and Vite production build.
 - Tested duplicate booking attempts, failed payment/retry, terminal-state protection, conflicting and repeated payment keys, started/full classes, ownership, malformed input, and rollback on a forced database failure.
 - Ran independent-process races against a shared SQLite file and verified one final-seat winner, explicit losing outcomes, and one attempt for concurrent request replays.

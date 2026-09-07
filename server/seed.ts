@@ -1,6 +1,6 @@
-import type { Database } from "bun:sqlite";
+import type { SqlDatabase } from "./sql-database";
 
-export function seed(db: Database): void {
+export function seed(db: SqlDatabase): void {
   db.transaction(() => {
     if (db.query("SELECT 1 FROM app_meta WHERE key = 'seed_version'").get())
       return;

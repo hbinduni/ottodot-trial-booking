@@ -26,6 +26,17 @@ Then open [localhost:3000](http://localhost:3000). Stop the dev servers first so
 
 Optional configuration is documented in [.env.example](.env.example). Copy it to `.env` to override `DATABASE_PATH`, `HOST`, or `PORT`. Defaults are a local data file and loopback-only listeners. Invalid API port/path values fail startup. The dev proxy reads the same API host and port. Vite uses port 5173 and fails if it is occupied.
 
+## Cloudflare deployment
+
+Live app: [ottodot-trial-booking.lina-duni.workers.dev](https://ottodot-trial-booking.lina-duni.workers.dev).
+
+The app also runs on Cloudflare Workers with static frontend assets and one persistent SQLite Durable Object. The HTTP handlers, booking rules, schema, and seeds are shared with the local Bun version. See [deployment instructions and runtime differences](docs/cloudflare.md).
+
+```sh
+bun run dev:cloudflare   # build frontend and run the Worker locally
+bun run test:cloudflare  # isolated real-Worker acceptance tests, including restart persistence
+```
+
 ## Verify
 
 ```sh
@@ -84,7 +95,7 @@ The responsive sidebar becomes top navigation on smaller screens. A keyboard-acc
 - `trial_classes`: title, subject, UTC start time, capacity constrained to exactly four.
 - `bookings`: one row per `(student_id, class_id)`, status, timestamps, foreign keys.
 - `payment_attempts`: booking, unique idempotency key, mock outcome, resulting booking status, optional refund reason, timestamp. Retries append a new attempt only when they use a new key on an eligible booking.
-- `app_meta`: records seed initialization; `PRAGMA user_version` records schema version.
+- `app_meta`: records seed initialization. Bun uses `PRAGMA user_version` for schema version; Cloudflare stores it in the same Durable Object's synchronous KV storage.
 
 See [schema.sql](server/schema.sql) and [bookings.ts](server/bookings.ts). SQL parameters are bound rather than interpolated from requests. Roster rows and counts are read in one snapshot.
 
@@ -101,7 +112,7 @@ Both pending and failed bookings can accept an attempt. A failed result sets `pa
 
 ### Atomic confirmation and duplicates
 
-`recordPayment` runs a synchronous `BEGIN IMMEDIATE` transaction:
+`recordPayment` runs a synchronous transaction: `BEGIN IMMEDIATE` on Bun, or native `storage.transactionSync` on Cloudflare:
 
 1. Check booking ownership and look for the idempotency key.
 2. Replay an identical stored attempt, or reject conflicting reuse.
@@ -114,7 +125,7 @@ SQLite allows one writer at a time. Acquiring the write lock before reading capa
 
 This deliberately uses a stronger uniqueness rule than “one confirmed booking”: one booking per child/class for its entire lifetime. Failed payments retry that row. Cancellation, re-enrollment, and booking identity changes are outside scope.
 
-The connection uses foreign keys, WAL mode, and a five-second busy timeout. Lock contention returns HTTP 503 with `Retry-After: 1`; payment callers must retain their original key. A lost response also requires retrying the original key. The browser stores outstanding requests in `sessionStorage` before sending, including their intended outcome, and offers recovery after reload.
+The Bun connection uses foreign keys, WAL mode, and a five-second busy timeout. Lock contention returns HTTP 503 with `Retry-After: 1`; payment callers must retain their original key. Cloudflare manages its SQLite connections and serializes synchronous work within the shared Durable Object. A lost response also requires retrying the original key. The browser stores outstanding requests in `sessionStorage` before sending, including their intended outcome, and offers recovery after reload.
 
 A replay returns **the original attempt plus the current booking**. For example, replaying an old failure after a later successful retry returns a failed historical attempt and a currently confirmed booking. This avoids rewriting history or downgrading current UI status.
 
@@ -157,10 +168,11 @@ Confirmation-time allocation avoids abandoned seat holds and expiry jobs. It acc
 ## Assumptions, cuts, and next steps
 
 - All data is synthetic. Demo identity selection and teacher access are public by design; there is no production authorization, real PII, payment processor, or charge amount.
-- No regular enrollment, cancellation, refunds execution, seat holds, email, background jobs, or deployment infrastructure.
+- No regular enrollment, cancellation, refunds execution, seat holds, email, or background jobs.
 - No pagination or automatic polling for this small dataset. Parents explicitly refresh when another tab changes state.
 - Start-time eligibility is checked at the confirmation decision using server time. Class scheduling/rescheduling is not exposed.
-- A locally shared database file is required. Separate files or separate machines do not share capacity; do not scale this by copying the database.
+- The Bun target requires a shared local database file. The Cloudflare target routes all demo classes and parents to one stable Durable Object. Separate files or separate object identities do not share capacity; do not scale by copying or partitioning the database by parent.
+- The public demo has shared, finite state. Other visitors can use its synthetic identities and consume its seats. Seeds run once; class dates do not move forward on redeploy. Repeatable interview scenarios can always be run locally with fresh seeds.
 
 After release I would monitor confirmed count violations, duplicate/constraint conflicts, payment-to-confirmation conversion, failed payments, refund-required count and age, provider/local mismatches, lock timeouts, and latency. Never log payment credentials or unnecessary child data.
 
@@ -168,7 +180,7 @@ With more time: authenticated parent/teacher roles; a real payment adapter with 
 
 ## Time and submission notes
 
-Time spent so far: **approximately one and a half hours** of active AI-assisted implementation, UI refinement, documentation, verification, and generated-video preparation on 7–8 September 2026. This is an estimate across working sessions, excluding idle intervals. Add candidate review and any further recording/editing time to the final four-hour total. See [verification.md](docs/verification.md).
+Time spent so far: **approximately two and a quarter hours** of active AI-assisted implementation, UI refinement, documentation, verification, generated-video preparation, and Cloudflare deployment on 7–8 September 2026. This is an estimate across working sessions, excluding idle intervals. Add candidate review and any further recording/editing time to the final four-hour total. See [verification.md](docs/verification.md).
 
 See [AI_USAGE.md](AI_USAGE.md) for tool use and corrections, and [the walkthrough guide](docs/walkthrough.md) for a 5–8 minute recording plan.
 

@@ -9,3 +9,6 @@ data/
 coverage/
 .playwright-mcp/
 artifacts/
+.wrangler/
+.dev.vars
+.dev.vars.*

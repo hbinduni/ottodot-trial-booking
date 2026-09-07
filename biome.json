@@ -1,7 +1,14 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   "files": {
-    "includes": ["**", "!dist", "!node_modules", "!data", "!artifacts"]
+    "includes": [
+      "**",
+      "!dist",
+      "!node_modules",
+      "!data",
+      "!artifacts",
+      "!**/.wrangler"
+    ]
   },
   "formatter": { "indentStyle": "space" },
   "javascript": { "formatter": { "quoteStyle": "double" } },

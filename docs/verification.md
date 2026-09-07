@@ -51,3 +51,18 @@ At the candidate's explicit request, a video with generated English narration wa
 - `bun run check:all:fix` passed after documentation and generated-artifact exclusions were added: 30 tests, 99 assertions, lint, types, and build.
 
 The video and local review player are generated artifacts, excluded from Git. Candidate review and a shareable hosting link remain separate from creating the file.
+
+## Cloudflare deployment, 8 September 2026
+
+The candidate completed Wrangler's local OAuth browser login and selected the workers.dev URL. Deployment adaptation and verification added approximately 40 minutes of active work; the total estimate is now approximately two and a quarter hours, excluding idle intervals and candidate review.
+
+- Published the [live app](https://ottodot-trial-booking.lina-duni.workers.dev) with persistent SQLite in one Durable Object. See the [deployment receipt and runbook](cloudflare.md).
+- Observed the real-Worker acceptance suite fail before adding its entry point, then pass with the implementation. The original Bun gate still passes 30 tests and 99 assertions.
+- Cloudflare tests cover five simultaneous replays, eight competing payments across parents with one last-seat winner, seven refund obligations, SQL foreign-key/capacity constraints, forced insert rollback, late-payment compensation, and persistence after stopping/restarting workerd.
+- Runtime tests exposed an unfinished forwarded-body failure following oversized input. Bounded buffering fixed it; fixed-length and chunked oversized requests, chunked missing-parent input, and subsequent valid requests pass.
+- A separate review found no deployment blockers. Its suggested chunked-input regression was added and passed.
+- Production bundle inspection found no test-only SQL endpoint or Bun SQLite import. The deployed endpoint returned 404 for the test route. HTML and all built assets matched local SHA-256 digests.
+- Live browser/API verification confirmed duplicate booking, failed-payment retry, idempotency, and the teacher roster. A second deployment retained the same booking and payment-attempt IDs and replay behavior.
+- Hosted smoke data remains usable: Space explorers 2/4 confirmed (Mia and Leo), Fun with fractions 3/4 confirmed. The existing Bun development database was preserved.
+
+Cloudflare rejected Python urllib's default HTTP client with error 1010; normal browser requests and curl returned successful responses. Live functional verification used the browser, and asset checks used curl. A few browser locator checks initially used incorrect element roles/titles; inspecting the actual rendered navigation resolved those test errors.

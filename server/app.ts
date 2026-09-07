@@ -1,8 +1,9 @@
-import type { Database } from "bun:sqlite";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { BookingService } from "./bookings";
 import { DomainError } from "./errors";
+import { bodyTooLarge, MAX_BODY_BYTES } from "./request-limits";
+import type { SqlDatabase } from "./sql-database";
 
 function identifier(value: unknown, name: string): string {
   if (typeof value !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(value)) {
@@ -54,7 +55,7 @@ async function jsonBody(
   return body as Record<string, unknown>;
 }
 
-export function createApp(db: Database) {
+export function createApp(db: SqlDatabase) {
   const app = new Hono();
   const service = new BookingService(db);
   const parentId = (c: Context) => {
@@ -72,17 +73,8 @@ export function createApp(db: Database) {
   app.use(
     "/api/*",
     bodyLimit({
-      maxSize: 8192,
-      onError: (c) =>
-        c.json(
-          {
-            error: {
-              code: "BODY_TOO_LARGE",
-              message: "Request body exceeds 8 KiB.",
-            },
-          },
-          413,
-        ),
+      maxSize: MAX_BODY_BYTES,
+      onError: (c) => c.json(bodyTooLarge, 413),
     }),
   );
   app.use("/api/*", async (c, next) => {

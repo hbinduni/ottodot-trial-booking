@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import type {
   Booking,
   BookingDetails,
@@ -11,6 +10,7 @@ import type {
   TrialClass,
 } from "../shared/types";
 import { DomainError } from "./errors";
+import type { SqlDatabase } from "./sql-database";
 
 const bookingSelect = `SELECT b.id, b.student_id AS studentId, b.class_id AS classId,
   s.name AS studentName, c.title AS classTitle, b.status, b.created_at AS createdAt,
@@ -24,7 +24,7 @@ const classSelect = `SELECT c.id, c.title, c.subject, c.starts_at AS startsAt, c
   FROM trial_classes c LEFT JOIN bookings b ON b.class_id = c.id AND b.status = 'confirmed'`;
 
 export class BookingService {
-  constructor(private db: Database) {}
+  constructor(private db: SqlDatabase) {}
 
   bootstrap(): Bootstrap {
     return {
