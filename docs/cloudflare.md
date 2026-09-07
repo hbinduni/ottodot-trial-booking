@@ -1,58 +1,79 @@
-# Cloudflare deployment
+# Deploying to Cloudflare
 
-Live demo: [ottodot-trial-booking.lina-duni.workers.dev](https://ottodot-trial-booking.lina-duni.workers.dev).
+[Open the live app](https://ottodot-trial-booking.lina-duni.workers.dev) · [Back to the README](../README.md)
 
-## Runtime and storage
+The hosted app serves the React frontend and API from one workers.dev address. Bookings live in persistent SQLite storage inside a Durable Object and survive normal redeployments.
 
-`wrangler.jsonc` deploys one Worker, `ottodot-trial-booking`, with Vite's `dist` as static assets and `BOOKINGS` bound to the SQLite-backed `BookingDatabase` Durable Object. `/api` and `/api/*` run through the Worker; missing assets return 404.
+## Deploy from your computer
 
-Every API request uses the stable object name `ottodot-demo-v1`. All parents and classes share that database, including simultaneous requests arriving at different edge locations. Changing the object name creates a different database. Renaming the Worker or Durable Object class can also change storage identity; preserve these names when redeploying.
+You'll need Bun, Node.js for Wrangler, and a Cloudflare account with permission to deploy Workers and SQLite Durable Objects. This setup was tested with Bun 1.4.0 and Node.js 24.20.0.
 
-The booking service uses a small synchronous SQL interface. Bun still uses its native SQLite transactions; the Cloudflare adapter fully consumes SQL cursors and uses `storage.transactionSync` for both write transactions and consistent read snapshots. Cloudflare does not permit SQL `BEGIN`/`COMMIT`. No network call occurs inside a booking transaction.
-
-The first Durable Object initialization installs the existing SQL schema and records schema version 1 in synchronous KV, within one native transaction. Unsupported versions fail startup. The shared seed function runs in its own transaction and checks `app_meta.seed_version`, so retries/restarts do not reset data or duplicate fixtures. Cloudflare owns the connection settings; local WAL/busy-timeout configuration is not applied there. Foreign keys, unique constraints, and capacity triggers remain enforced.
-
-API bodies are buffered at the Worker boundary, with an 8 KiB limit enforced while reading even when Content-Length is absent. This avoids forwarding an unfinished request stream to a Durable Object that may reject the request before reading it. The shared Hono app retains its own body limit. A test covers oversized and chunked requests followed by valid requests.
-
-References: [Cloudflare SQLite storage and transactions](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/), [Durable Object exports](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/), [static asset bindings](https://developers.cloudflare.com/workers/static-assets/binding/).
-
-## Deploy using a local Wrangler session
-
-Requires Bun 1.4.0 and Node.js supported by the installed Wrangler CLI (verified with Node 24.20.0). Dependencies are installed through Bun. Wrangler's executable runs on Node; the deployed backend runs on Cloudflare's runtime.
+Run these commands from the repository root:
 
 ```sh
 bun install --frozen-lockfile
+
+# Sign in through your browser and check the available accounts.
 env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_ACCOUNT_ID bunx wrangler login
 env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_ACCOUNT_ID bunx wrangler whoami
+
+# Replace this with the account ID you want to deploy to.
+export CLOUDFLARE_ACCOUNT_ID='<your-account-id>'
+
 bun run check
 bun run test:cloudflare
-# Set this to the intended account returned by whoami before deployment.
-export CLOUDFLARE_ACCOUNT_ID='<your-account-id>'
 env -u CLOUDFLARE_API_TOKEN bun run deploy:cloudflare
 ```
 
-The environment token is explicitly unset so it cannot override the local OAuth login. The account ID selects the deployment account; it is not a credential. No credentials are committed. Wrangler creates the Worker, its SQLite Durable Object namespace, and the workers.dev route on first deployment. The `exports` declaration manages the Durable Object class. No custom domain, D1 database, tunnel, or K3s deployment is involved.
+`env -u CLOUDFLARE_API_TOKEN` prevents an existing token from overriding your browser login. You can reuse that login for later deployments. The account ID selects the destination account; it isn't a secret.
 
-Repeat the final command to update the Worker and assets while retaining data. Review schema changes separately; do not delete the Durable Object namespace to fix a code deployment. The local `bun run seed --reset` command affects only the configured Bun database and cannot reset the hosted demo.
+The deploy script builds the frontend and uploads the Worker and static files. [wrangler.jsonc](../wrangler.jsonc) defines the Worker, its `BOOKINGS` storage binding, and the Durable Object class. Wrangler prints the public URL and Version ID when deployment finishes. Another account will have a different workers.dev subdomain.
 
-## Verification and limitations
+For later updates, run the checks and deploy command again. Pushing to GitHub alone doesn't deploy the app. To preview it locally in Cloudflare's runtime, run `bun run dev:cloudflare` and open the URL Wrangler prints.
 
-`bun run test:cloudflare` starts Wrangler/workerd on a temporary loopback port and temporary storage, exercises the API, then stops and restarts the entire runtime using the same storage. It checks seeds, static assets, JSON/ownership/body errors, duplicate booking, failed-payment retry, five concurrent payment replays, eight payments racing across two parents for one seat, explicit refund obligations, direct SQL constraints, atomic rollback on a forced insert failure, started-class compensation, and persistence/idempotency after restart.
+## Check the deployed version
 
-The test config exports a separate fixture subclass with a local SQL-injection endpoint to set up races and force failures. That fixture is not imported by the production entry point and must never be deployed. The normal Worker exposes only the existing app routes; there is no public reset or SQL/admin endpoint.
+In the [Cloudflare dashboard](https://dash.cloudflare.com/), open **Workers & Pages → ottodot-trial-booking → Deployments**. You can also use Wrangler with the account selected above:
 
-The public demo is intentionally synthetic and shared. Anyone can select any demo identity or view the teacher roster; these are not real authentication or authorization roles. No real children or payment data should be entered. Payments are mock outcomes and do not move money.
+```sh
+env -u CLOUDFLARE_API_TOKEN bunx wrangler deployments list --name ottodot-trial-booking
+env -u CLOUDFLARE_API_TOKEN bunx wrangler versions view '<version-id>' --name ottodot-trial-booking
+```
 
-Seats consumed by visitors remain consumed, and dates are fixed seven/eight days after the initial seed. Redeployment preserves those dates and bookings. Use an isolated local reset for a repeatable last-seat demonstration. One Durable Object also serializes unrelated classes; this is suitable for the take-home demo, not a high-volume deployment architecture.
+Replace `<version-id>` with a version from the deployment list. A Cloudflare Version ID identifies an uploaded version; the deployment shows which version is serving traffic. Neither is a Git commit SHA. See Cloudflare's [versions and deployments guide](https://developers.cloudflare.com/workers/versions-and-deployments/) for details.
 
-The recorded walkthrough demonstrates the original Bun implementation. Its payment rules and SQL constraints also apply here, but its `BEGIN IMMEDIATE` explanation describes the local runtime; Cloudflare uses the native transaction API described above.
+The [health endpoint](https://ottodot-trial-booking.lina-duni.workers.dev/api/health) checks that the API can query its database. It returns `{"status":"ok","mode":"synthetic-demo"}` when healthy.
+
+## How storage works
+
+Every `/api` or `/api/*` request reaches the same Durable Object, named `ottodot-demo-v1`. All parents and classes therefore share one database, even when requests arrive at different Cloudflare locations. Keep the Worker name, Durable Object class, and object name unchanged when redeploying so existing bookings remain accessible.
+
+The shared booking service runs through a small storage adapter. Bun uses SQLite's `BEGIN IMMEDIATE`; Cloudflare uses `storage.transactionSync` for writes and consistent read snapshots. The adapter finishes reading each SQL result before returning. There are no network calls inside a booking transaction. See the [SQLite storage API](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/) for the Cloudflare transaction behavior.
+
+On first startup, the Durable Object installs the schema and saves version 1 in the same transaction. An unsupported schema version stops startup. The seed function checks `app_meta.seed_version`, so restarts add no duplicate demo records. Cloudflare manages its own connection settings; the local WAL and busy-timeout settings apply only to Bun. Both runtimes enforce the schema's foreign keys, unique constraints, and capacity triggers.
+
+The Worker reads request bodies before forwarding them, stopping at 8 KiB even without a `Content-Length` header. This prevents a rejected request from leaving an unfinished stream between the Worker and Durable Object. Hono also enforces its own body limit.
+
+## Using the shared demo
+
+The families and payments are made up. Anyone can select a demo parent or view a teacher roster, and no money moves. Bookings made by visitors persist. Class dates are set seven and eight days ahead at the first seed and stay fixed across deployments.
+
+For a repeatable last-seat demonstration, use a fresh local database as described in the [README](../README.md#scenarios-to-explore). `bun run seed --reset` only resets the configured Bun database. Schema changes need a migration; deleting hosted storage is not part of a routine deployment.
+
+One Durable Object serializes writes for all classes. That keeps the demo straightforward, but limits write throughput as usage grows. The video shows the local Bun app; its payment rules also apply here, while its `BEGIN IMMEDIATE` explanation is specific to Bun.
+
+The [Cloudflare test script](../scripts/test-cloudflare.ts) uses temporary storage and a separate test configuration. Its fixture can run SQL to set up races and force failures. That fixture isn't imported by the deployed entry point. The public app has no SQL or reset endpoint. Results are recorded in the [verification notes](verification.md).
 
 ## Deployment receipt, 8 September 2026
 
-- Initial version: `de97d425-1c34-48c8-86b7-2a8e1c502ecc`.
-- Verified redeployment: `023c2146-8a3c-4ca6-8375-edb97f627109`.
-- Walkthrough player and WebVTT captions added: `f509c1cb-59b8-4877-bfae-3075799a6f6e`. The MP4 is hosted in a GitHub Release and loaded by `/walkthrough.html`; it is not part of the Worker asset upload.
-- Live HTML, JavaScript, CSS, and both illustrations matched the local build byte-for-byte.
-- Browser-origin API checks verified duplicate booking, failed payment followed by successful retry, identical-key replay, confirmed-only roster, oversized input rejection, and HTTP 404 for the test SQL endpoint.
-- Leo's Space explorers booking and both payment attempts retained their IDs after redeployment; replay still returned the original successful attempt. The live teacher view showed Leo and Mia, 2/4 confirmed. Fun with fractions remained 3/4 confirmed.
-- The local 30-test suite, both TypeScript targets, Biome, Vite build, and isolated Cloudflare runtime suite passed. An independent deployment review found no blockers.
+These are the versions and results recorded during deployment, not a live status report:
+
+| Deployment | Cloudflare Version ID |
+| --- | --- |
+| Initial app | `de97d425-1c34-48c8-86b7-2a8e1c502ecc` |
+| Redeployment used to check persistence | `023c2146-8a3c-4ca6-8375-edb97f627109` |
+| Walkthrough player and WebVTT captions | `f509c1cb-59b8-4877-bfae-3075799a6f6e` |
+
+The deployed HTML, JavaScript, CSS, and illustrations matched the local build. Live checks covered duplicate booking, failed-payment retry, payment replay, the confirmed roster, oversized input rejection, and a `404` for the test-only SQL route. Leo's Space explorers booking and both payment-attempt IDs survived redeployment, and replay returned the same successful attempt.
+
+At that check, Space explorers had Mia and Leo confirmed, and Fun with fractions had three confirmed children. Visitors may have changed those counts since then. The walkthrough MP4 is hosted in a [GitHub Release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1); only the player and WebVTT captions are Worker assets.

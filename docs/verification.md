@@ -1,79 +1,59 @@
-# Verification record
+# Test and verification notes
 
-Environment: macOS, Bun 1.4.0. Session date: 7 September 2026 (Asia/Jakarta). Initial implementation/review session: approximately 21:48–22:18 WIB (30 minutes). This is an estimate, not an automated time tracker. Add candidate review and recording time to the final total.
-
-A second session starting at approximately 22:56 WIB refined the UI and repeated browser regression checks. Combined active implementation time is approximately one hour; the idle interval between sessions is excluded.
+These results were recorded during development on 7–8 September 2026, using macOS and Bun 1.4.0. They describe checks already performed, not a live health report. To repeat the automated checks, run the commands below from the repository root.
 
 ## Automated checks
 
-- `bun run check:all:fix`: formatting/lint, strict TypeScript, 30 tests with 99 assertions, and Vite production build passed.
-- `bun run demo:race`: B confirmed; A refund-required for a full class; exactly four confirmed roster rows.
-- Concurrency includes eight independent Bun processes released at a readiness barrier, five concurrent replays of one key, and a real locked-database HTTP 503 path.
-- Persistence is verified after closing and reopening the SQLite file.
-- An independent backend code review found no actionable defects; its replay-wording clarification was incorporated.
-- A clean temporary checkout installed `bun.lock` with `bun install --frozen-lockfile`, passed `bun run check`, and initialized fresh seed data.
+| Command | Recorded result |
+| --- | --- |
+| `bun run check` | Biome, both TypeScript targets, 30 tests with 99 assertions, and the Vite build passed. |
+| `bun run demo:race` | Parent B confirmed first. Parent A received `refund_required` for the full class. The roster contained exactly four children. |
+| `bun run test:cloudflare` | The API and storage checks passed in the local Cloudflare runtime, including a full restart using the same stored data. |
+
+A clean temporary checkout also installed dependencies with `bun install --frozen-lockfile`, passed `bun run check`, and created the expected starting data. Tests and race scripts use temporary databases, leaving development bookings alone.
+
+### The last seat and repeated requests
+
+The [Bun concurrency tests](../tests/concurrency.test.ts) start eight independent processes with separate connections to one SQLite file. They wait until every process is ready, then release them together. Exactly one payment takes the last seat; the other seven require refunds. Five concurrent copies of one payment key produce one stored attempt.
+
+The Cloudflare suite checks the same outcomes with eight competing payments across two parents and five repeated requests. Both runtimes also check that a booking update rolls back if saving its payment attempt fails.
+
+### Other failure cases
+
+The suites cover duplicate bookings, failed-payment retries, final booking states, conflicting payment keys, another parent's resources, invalid input, full and started classes, and database constraints. Bun tests include a locked database returning HTTP `503`, and persistence after reopening the file. Cloudflare tests include oversized fixed-length and chunked bodies, valid requests after rejected input, and payment replay after restarting the runtime.
 
 ## Browser checks
 
-Against the running React UI and Hono API:
+Playwright was used during development against the running React app and API. These checks are documented here; they aren't yet a committed end-to-end test suite.
 
-- Two-tab last-seat race: Noah confirmed first; Ava became refund-required; the roster contained four children and excluded Ava.
-- Failed payment excluded Ava from the Space explorers roster; a new successful attempt confirmed her.
-- Duplicate submission reopened the same booking reference.
-- Payment-response loss was injected after the server committed. The page retained the request key, survived reload, and recovered the confirmed booking with one payment attempt.
-- The production build was served by Hono on port 3000 and showed the persisted booking and payment history, with no console errors.
-- At a 390-pixel viewport, page content fit without horizontal overflow.
-- Final demo data was restored and read back through the API: Space explorers 1/4 confirmed; Fun with fractions 3/4 confirmed.
+| Scenario | Observed result |
+| --- | --- |
+| Two parents compete for the last seat | Noah confirmed first; Ava needed a refund. The roster had four children and excluded Ava. |
+| Failed payment followed by a retry | Ava stayed off the roster after failure and appeared after a successful retry. |
+| Reopen a booking | The same booking reference and payment history were shown. |
+| Lose the response after the server commits | Reloading preserved the request key. Retrying recovered confirmation with one payment attempt. |
+| Navigation and filters | Class and booking filters worked; the booking URL reopened its panel; Escape closed the dialog. |
+| Roster request fails | An error appeared while class discovery remained usable. Returning after network recovery loaded the roster. |
+| Narrow screen | The class list, booking history, roster, and dialog fit a 390-pixel viewport without horizontal overflow. |
 
-After the UI redesign, the following were repeated against a production build with an isolated temporary database, preserving the candidate's current demo data:
+The core flows were repeated after the interface redesign using an isolated database. A separate UI review caught a stale count in the roster selector; occupancy now comes from the fetched roster response. The built app also showed persisted booking history when served by Hono on port 3000, without console errors.
 
-- Two-tab last-seat completion, failed-payment retry, duplicate reopening, and lost-response recovery after reload. API readback confirmed one booking per child/class and one attempt for the recovered payment.
-- Subject and booking-status filters, separate navigation views, booking URL restoration, and Escape dismissal.
-- A failed roster request showed an error while class discovery remained usable; revisiting the roster after network recovery loaded its table.
-- Explore classes, My bookings, Teacher roster, and the booking dialog fit a 390-pixel viewport without horizontal overflow.
-- A separate UI review found a stale cached count in the roster selector. Removing that count leaves occupancy attached to the freshly fetched roster.
+## Hosted app
 
-These browser checks were performed using Playwright during development; they are not yet a committed automated end-to-end suite. The repository tests are executable via `bun run check`.
+Cloudflare checks confirmed duplicate booking, failed-payment retry, request replay, and the teacher roster. A second deployment preserved the booking and payment-attempt IDs. Built assets matched local SHA-256 digests, and the test-only SQL endpoint returned `404`.
 
-## Submission status
+The deployed bundle contained neither the test fixture nor Bun's SQLite import. The [deployment receipt](cloudflare.md#deployment-receipt-8-september-2026) records the version IDs and the data observed at the time. A separate Codex review found no deployment blockers.
 
-The implementation is published at [hbinduni/ottodot-trial-booking](https://github.com/hbinduni/ottodot-trial-booking). Candidate code review and the final personal AI reflection remain separate submission steps. Public video hosting is recorded below.
+## Walkthrough video
 
-## Generated walkthrough, 8 September 2026
+The [published walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) runs for 6 minutes 47 seconds at 1920 × 1080, with H.264 video and AAC audio. Its 13 chapters show app interactions, code, test output, tradeoffs, and the AI disclosure. It uses clearly labeled generated English narration and a separate demo database.
 
-At the candidate's explicit request, a video with generated English narration was prepared in approximately 25 minutes. Combined active project work is approximately one and a half hours, excluding idle intervals and future candidate review.
+The complete MP4 decoded without errors. Browser checks confirmed playback, chapter seeking, all 79 WebVTT caption cues, and a download fallback when the video request was blocked. Desktop and 390-pixel layouts had no page errors or horizontal overflow. Sampled app, code, and test frames were checked for legibility.
 
-- Final MP4: 6 minutes 47 seconds, 1920 × 1080, H.264 video with AAC audio, approximately 18 MB.
-- Thirteen chapters cover actual app interactions, last-seat completion order, payment failure/retry, lost-response recovery, source excerpts, test output, tradeoffs, and AI disclosure.
-- Browser recording used an isolated database and preserved the existing development data. Recording assertions checked the confirmed roster and one-attempt recovery invariant.
-- English narration uses a standard synthetic voice and is explicitly labeled. Captions use speech-service timestamps; a [transcript](narration.md) is included in Git.
-- The complete MP4 decoded without media errors. Browser playback loaded a 407.45-second, 1080p stream without errors. Sampled app, code, test, and closing frames were inspected for legibility.
-- `bun run check:all:fix` passed after documentation and generated-artifact exclusions were added: 30 tests, 99 assertions, lint, types, and build.
+An unauthenticated GitHub API request confirmed the public release and all three assets: the 18,884,896-byte MP4, SRT captions, and checksums. GitHub's MP4 digest matched the local SHA-256:
 
-The video and local review player are generated artifacts, excluded from Git. The later public upload is recorded below.
+```text
+adaa5139e6e3de196eecceace9f701888087fe21e24b1816caed0ce4c48545e0
+```
 
-## Cloudflare deployment, 8 September 2026
-
-The candidate completed Wrangler's local OAuth browser login and selected the workers.dev URL. Deployment adaptation and verification added approximately 40 minutes of active work; the total estimate is now approximately two and a quarter hours, excluding idle intervals and candidate review.
-
-- Published the [live app](https://ottodot-trial-booking.lina-duni.workers.dev) with persistent SQLite in one Durable Object. See the [deployment receipt and runbook](cloudflare.md).
-- Observed the real-Worker acceptance suite fail before adding its entry point, then pass with the implementation. The original Bun gate still passes 30 tests and 99 assertions.
-- Cloudflare tests cover five simultaneous replays, eight competing payments across parents with one last-seat winner, seven refund obligations, SQL foreign-key/capacity constraints, forced insert rollback, late-payment compensation, and persistence after stopping/restarting workerd.
-- Runtime tests exposed an unfinished forwarded-body failure following oversized input. Bounded buffering fixed it; fixed-length and chunked oversized requests, chunked missing-parent input, and subsequent valid requests pass.
-- A separate review found no deployment blockers. Its suggested chunked-input regression was added and passed.
-- Production bundle inspection found no test-only SQL endpoint or Bun SQLite import. The deployed endpoint returned 404 for the test route. HTML and all built assets matched local SHA-256 digests.
-- Live browser/API verification confirmed duplicate booking, failed-payment retry, idempotency, and the teacher roster. A second deployment retained the same booking and payment-attempt IDs and replay behavior.
-- Hosted smoke data remains usable: Space explorers 2/4 confirmed (Mia and Leo), Fun with fractions 3/4 confirmed. The existing Bun development database was preserved.
-
-Cloudflare rejected Python urllib's default HTTP client with error 1010; normal browser requests and curl returned successful responses. Live functional verification used the browser, and asset checks used curl. A few browser locator checks initially used incorrect element roles/titles; inspecting the actual rendered navigation resolved those test errors.
-
-## Public video hosting, 8 September 2026
-
-- Published the 18,884,896-byte MP4, SRT captions, and checksums in the public [walkthrough-v1 GitHub Release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1). The MP4 remains outside Git history; no Git LFS setup is required.
-- An unauthenticated GitHub API request confirmed that the release was published and all three assets were uploaded. GitHub's video digest matched the local SHA-256: `adaa5139e6e3de196eecceace9f701888087fe21e24b1816caed0ce4c48545e0`.
-- The [public player](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) streams the file from its stable GitHub release URL. The page displays the generated-narration disclosure and explains that the recording shows the local Bun runtime.
-- Fresh browser contexts with no saved login verified playback of the 407.45-second, 1920 × 1080 video, seeking to the SQLite chapter, and loading all 79 WebVTT caption cues. Desktop and 390-pixel layouts had no horizontal overflow or page errors. Blocking the video request displayed the download fallback.
-- The repository gate passed 30 tests and 99 assertions, both TypeScript targets, Biome, and the frontend build. Documentation links, chapter time bounds, and player JavaScript syntax were checked. The initial lint check prompted adding an accessible text caption track alongside the captions already burned into the video.
-- Cloudflare version `f509c1cb-59b8-4877-bfae-3075799a6f6e` added the player and caption file. The app's live database health check still returned HTTP 200.
-
-Active project work is now estimated at approximately two and a half hours, including README revisions and video publishing, excluding idle time and candidate review. The published video uses generated narration; reviewing the explanation and sending the submission remain the candidate's steps.
+The MP4 is a [GitHub Release asset](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1), so cloning the repository doesn't download the video or require Git LFS. The [transcript](narration.md) is included in the repository.

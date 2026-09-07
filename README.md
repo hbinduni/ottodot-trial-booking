@@ -2,7 +2,7 @@
 
 A take-home project for booking children's trial classes. Parents choose a child and a class, try a mock payment, and see whether the booking is confirmed. Teachers can check who's coming, with a maximum of four children in each class.
 
-The interesting part is what happens when two parents want the last seat. This project focuses on getting that right, along with duplicate bookings, failed payments, and retries after a lost response.
+The main challenge is what happens when two parents want the last seat. This project handles that case alongside duplicate bookings, failed payments, and retries after a lost response.
 
 **[Open the live demo](https://ottodot-trial-booking.lina-duni.workers.dev)** · **[Watch the walkthrough · 6:47](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html)** · [How it works](#how-the-solution-works) · [Run locally](#run-locally) · [Deploy to Cloudflare](#cloudflare-deployment)
 
@@ -101,17 +101,17 @@ flowchart TD
     end
 ```
 
-Every parent's API requests reach the same named Durable Object. It owns the database for all demo classes, which gives competing payments one shared place to check and claim seats. The Worker routes requests; the booking rules run inside the Durable Object.
+Every parent's API requests reach the same named Durable Object. It owns the database for all demo classes, so competing payments check and claim seats in one shared database. The Worker routes requests; the booking rules run inside the Durable Object.
 
 Locally, Bun runs the same Hono API and booking service against a SQLite file. A small storage interface lets the service use Bun's SQLite connection or Cloudflare's storage adapter. Both versions share the SQL schema and business rules; they have separate databases.
 
 ### From choosing a class to joining the roster
 
-1. **Load the available choices.** React calls `GET /api/bootstrap` for the demo families, children, and classes, and loads the selected parent's bookings. The displayed seat count is a snapshot; the server checks availability again when handling a booking or payment.
-2. **Create or reopen a booking.** Clicking **Book trial** opens an existing booking if the browser already knows about it. Otherwise, it sends the child and class IDs to `POST /api/bookings`. The server checks ownership and returns any existing child/class booking. For a new booking, it rejects a full or started class, then creates `pending_payment`. This doesn't reserve a seat.
-3. **Submit a mock payment.** The parent chooses success or failure. The browser saves a unique request key and the chosen outcome before calling `POST /api/bookings/:id/payments`. The selected demo parent travels in `X-Demo-Parent-Id`; the request key travels in `Idempotency-Key`.
-4. **Decide the booking result atomically.** In one database transaction, the service handles replays, checks the booking and class, and saves the payment attempt alongside the new booking status. A failed payment leaves no seat allocated. A successful payment confirms the booking only if a seat is still available and the class hasn't started; otherwise, it records a refund obligation.
-5. **Show what the server saved.** The payment response includes the booking, the recorded attempt, and whether this was a replay. React shows that result and refreshes availability and booking details. Opening **Teacher roster** queries only `confirmed` bookings. Another tab sees changes when it loads or refreshes its data.
+1. **Load the choices.** React fetches the demo families, classes, and the selected parent's bookings. Seat counts are snapshots, so the server checks availability again before creating a booking or confirming a payment.
+2. **Create or reopen a booking.** **Book trial** opens an existing booking or asks the API to create one. The API checks that the child belongs to the parent and returns any existing child/class booking. A new booking starts as `pending_payment` if the class has room and hasn't started. No seat is reserved yet.
+3. **Submit a mock payment.** The parent chooses success or failure. The browser saves a unique request key and that outcome before sending them to the API. This lets it recover the result if the response is lost.
+4. **Save the result together.** In one transaction, the service checks the request and saves both the payment attempt and booking status. A failed payment leaves the child unenrolled. A successful payment confirms a seat if there's still room and the class hasn't started; otherwise, it records that a refund is needed.
+5. **Refresh the views.** React shows the saved result and reloads availability and booking details. **Teacher roster** queries only confirmed bookings. Another tab picks up changes when it loads or refreshes its data.
 
 ### What is stored
 
@@ -122,7 +122,7 @@ Locally, Bun runs the same Hono API and booking service against a SQLite file. A
 | `bookings` | Connect one child to one class and store the current booking status. |
 | `payment_attempts` | Keep each payment key, mock outcome, resulting status, and any refund reason. A booking can have several attempts after failures. |
 
-Keeping payment history separate from the current booking explains both **what happened to each request** and **whether the child has a seat now**. Availability is calculated from confirmed bookings, rather than a separate seat counter that could drift out of sync.
+Payment history explains **what happened to each request**; the booking tells us **whether the child has a seat now**. Availability is calculated from confirmed bookings, so there's no separate seat counter to keep in sync.
 
 ### Booking states
 
@@ -149,7 +149,7 @@ Within that transaction, the service:
 
 If saving the attempt fails, the booking update rolls back too. A successful payment only confirms a seat if the class hasn't started and still has room. Otherwise, it records `refund_required` with the appropriate reason.
 
-The database also enforces the rules. Unique constraints prevent duplicate child/class bookings and payment keys. Foreign keys keep records connected, and triggers reject a fifth confirmed child even if a future writer bypasses the service. Roster rows and their count are read from the same transaction snapshot.
+The database also enforces the rules. Unique constraints prevent duplicate child/class bookings and payment keys. Foreign keys keep records connected, and triggers reject a fifth confirmed child even if a future writer bypasses the service. The roster and its count are read in one transaction, so they describe the same stored state.
 
 The tradeoff is that SQLite serializes writes. The local app must share one database file, and all Cloudflare requests must use the same Durable Object. Splitting storage by parent would let different families claim the same seat.
 
@@ -206,13 +206,11 @@ bun test tests/concurrency.test.ts
 bun run test:cloudflare          # test the app in the local Cloudflare runtime
 ```
 
-The race demo and tests use temporary databases, leaving your development data alone.
+The race demo and tests use temporary databases, leaving your development data alone. Eight independent Bun processes compete for the last seat; the test requires one winner and seven refund obligations. Five copies of the same payment key must produce one attempt.
 
-The Bun concurrency tests start eight separate processes against one SQLite file and release them together. They require exactly one last-seat winner and seven refund obligations. Another test sends five copies of one payment request and checks that only one attempt is stored.
+Other tests cover failed-payment retries, duplicates, ownership, invalid input, full and started classes, database constraints, lock contention, and rollback. The Cloudflare suite checks the critical flows in workerd and restarts the runtime to verify persistence.
 
-The tests also cover failed-payment retries, duplicate bookings, ownership checks, invalid input, full and started classes, database constraints, lock contention, and rollback after a forced payment-recording failure. The Cloudflare suite checks the same critical flows in workerd and restarts the runtime to check persistence.
-
-[Verification notes](docs/verification.md) record the results and browser checks, including recovery after a payment response was deliberately dropped. Those browser checks are documented development checks; they aren't yet a committed end-to-end test suite.
+The [verification notes](docs/verification.md) record these results and the browser checks, including recovery after a deliberately lost response. The browser checks aren't yet a committed end-to-end test suite.
 
 ## Cloudflare deployment
 
@@ -251,14 +249,7 @@ For an update, run the checks and the same deploy command. Keep the Worker name,
 
 ### Check which version is live
 
-With your account selected as above:
-
-```sh
-env -u CLOUDFLARE_API_TOKEN bunx wrangler deployments list --name ottodot-trial-booking
-env -u CLOUDFLARE_API_TOKEN bunx wrangler versions view '<version-id>' --name ottodot-trial-booking
-```
-
-Replace `<version-id>` with a version from the deployment list. The latest deployment shows which version is serving traffic. Cloudflare's Version ID is separate from a Git commit SHA. The [deployment receipt](docs/cloudflare.md#deployment-receipt-8-september-2026) records what was verified for this submission; Cloudflare's [versions guide](https://developers.cloudflare.com/workers/versions-and-deployments/) explains the dashboard view.
+Open the Worker's **Deployments** page to see which version is serving traffic. Cloudflare's Version ID is separate from a Git commit SHA. The [deployment guide](docs/cloudflare.md#check-the-deployed-version) includes Wrangler commands, and the [deployment receipt](docs/cloudflare.md#deployment-receipt-8-september-2026) records the versions checked during development.
 
 To preview the Cloudflare version locally, run `bun run dev:cloudflare` and open the URL Wrangler prints.
 
@@ -266,18 +257,25 @@ To preview the Cloudflare version locally, run `bun run dev:cloudflare` and open
 
 The payment endpoint is a mock command. It can record a payment outcome and allocate a seat in one database transaction because it doesn't contact a payment provider. A real charge can't be made atomic with this SQLite transaction.
 
-A production payment flow would need provider idempotency keys, signed event verification, amount and currency checks, durable event deduplication, and an outbox for refund work. A late or duplicate event describing an actual charge still needs reconciliation, even if the booking is already final. The mock's rule for rejecting a new payment command isn't sufficient for a real webhook.
+A real payment flow would verify provider signatures, check amounts and currencies, and store processed event IDs so repeat notifications don't repeat the work. Refunds would need a durable work queue or outbox. Late notifications about actual charges still need to be reconciled, even for a final booking. The mock's rule for rejecting a new payment command isn't enough for a real webhook.
 
 Allocating seats at confirmation avoids abandoned seat holds and expiry jobs, but it means a parent can pay after the class fills. Temporary holds or authorization followed by capture could improve that experience, with extra work for expiry and late events.
 
-This slice also leaves out real parent/teacher authentication, cancellation, re-enrollment, refund execution, emails, background jobs, and regular enrollment. There's no pagination or automatic polling; use **Refresh** when another tab changes a booking.
+The demo also leaves out real parent/teacher authentication, cancellation, re-enrollment, refund execution, emails, background jobs, and regular enrollment. There's no pagination or automatic polling; use **Refresh** when another tab changes a booking.
 
 The next priorities would be authenticated roles, payment reconciliation and refund processing, and automated browser recovery tests. At higher write volume, PostgreSQL with a lock on the relevant class row would allow unrelated classes to handle payments concurrently. Useful operational signals would include unresolved refunds, payment/booking mismatches, capacity violations, lock timeouts, and latency.
 
-## Project notes
+## Further reading
+
+| Document | What it covers |
+| --- | --- |
+| [Cloudflare deployment](docs/cloudflare.md) | Deployment steps, storage behavior, and recorded versions. |
+| [Test and verification notes](docs/verification.md) | Automated coverage, browser checks, and their limitations. |
+| [Video transcript](docs/narration.md) | The spoken walkthrough, with chapter timestamps. |
+| [AI usage](AI_USAGE.md) | AI contributions, candidate decisions, and corrections during development. |
+
+## Time and AI assistance
 
 The project was built with substantial AI assistance. [AI_USAGE.md](AI_USAGE.md) explains what Codex helped with, the candidate's decisions, and corrections made during review.
 
-Active work was estimated at **about two and a half hours** across implementation, UI changes, tests, documentation, video preparation and publishing, and deployment on 7–8 September 2026. This excludes idle time and candidate review; it isn't a precise time log. Further review and editing count toward the task's four-hour cap.
-
-The [video walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) loads its MP4 from a public [GitHub Release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1). The release also includes captions and checksums. The [walkthrough guide](docs/walkthrough.md) includes questions to rehearse and notes for recording your own narration.
+Before the final documentation cleanup, active work was estimated at **about two and a half hours** across implementation, tests, UI changes, video preparation, and deployment on 7–8 September 2026. This excludes idle time and the candidate's own review; no precise time log was kept. Later edits and review also count toward the task's four-hour limit.

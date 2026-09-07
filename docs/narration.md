@@ -1,6 +1,10 @@
-# Ottodot narrated walkthrough
+# Walkthrough transcript
 
-Generated English voice: Microsoft Andrew Neural. Screen interactions are automated against an isolated synthetic database. Review before submitting.
+[Watch the 6:47 video](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) · [Back to the README](../README.md)
+
+The video uses generated English narration by Microsoft Andrew Neural and automated screen capture with a separate demo database. It shows the local Bun/SQLite app. The hosted app uses the same booking rules with [Cloudflare's transaction API](cloudflare.md#how-storage-works).
+
+The transcript below preserves the spoken wording, including the test results recorded at the time. See [AI usage](../AI_USAGE.md) for the contributions and disclosure.
 
 ## 00:00:00 — Scope and app navigation
 
