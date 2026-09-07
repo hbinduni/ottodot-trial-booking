@@ -1,0 +1,36 @@
+{
+  "name": "ottodot-trial-booking",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.0",
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "dev:api": "bun --watch server/index.ts",
+    "dev:web": "vite --host 127.0.0.1",
+    "start": "bun server/index.ts",
+    "seed": "bun server/seed-cli.ts",
+    "demo:race": "bun scripts/demo-race.ts",
+    "test": "bun test tests",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "build": "vite build",
+    "check:all:fix": "bun run format && bun run typecheck && bun run test && bun run build",
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "hono": "^4.13.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@types/bun": "^1.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}
