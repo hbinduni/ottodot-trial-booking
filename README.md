@@ -60,13 +60,21 @@ bun run dev
 ## Last-seat walkthrough
 
 1. Start with fresh seed data. Open the UI in two tabs.
-2. In tab A, use Amy → Ava → Fun with fractions; continue to payment.
-3. In tab B, use Ben → Noah → Fun with fractions; continue to payment.
+2. In tab A, choose Amy → Ava in **Explore classes**, then **Book trial** on Fun with fractions.
+3. In tab B, choose Ben → Noah, then **Book trial** on Fun with fractions.
 4. Complete B's successful mock payment. B becomes `confirmed`.
 5. Complete A's successful mock payment. A becomes `refund_required`, reason `class_full`.
-6. The teacher roster has exactly four children, including Noah and excluding Ava.
+6. Close the booking panel, open **Teacher roster**, and select Fun with fractions. It has exactly four children, including Noah and excluding Ava.
 
 The winner is whichever transaction acquires the database write lock and commits first. Starting checkout earlier confers no priority. Seat availability on screen is advisory and may be stale; use **Refresh data** to reload other tabs' changes.
+
+## App navigation
+
+- **Explore classes:** select a child, filter by subject, and open a trial booking. Four seat markers show the latest loaded availability.
+- **My bookings:** view all family bookings or filter to confirmed bookings and those needing attention. Reopen a booking to see its payment history or retry a failed attempt.
+- **Teacher roster:** choose a class to load its confirmed learners and occupancy together.
+
+The responsive sidebar becomes top navigation on smaller screens. A keyboard-accessible booking dialog keeps payment and status in context; its URL restores the open booking after reload. Demo parent selection and outstanding payment requests are stored per browser tab. The parent/teacher views are navigation boundaries, not authorization.
 
 ## Backend design
 
@@ -160,6 +168,6 @@ With more time: authenticated parent/teacher roles; a real payment adapter with 
 
 ## Time and submission notes
 
-Time spent so far: **approximately 30 minutes**, from about 21:48 to 22:18 WIB on 7 September 2026, including AI-assisted implementation, documentation, review, and verification. This is an elapsed-time estimate. Candidate review and recording time must be added to the final four-hour total; the recording has not been created by the implementation agent. See [verification.md](docs/verification.md).
+Time spent so far: **approximately one hour** of active AI-assisted implementation, UI refinement, documentation, review, and verification on 7 September 2026. This is an estimate across two working sessions, excluding the idle interval. Candidate review and recording time must be added to the final four-hour total; the recording has not been created by the implementation agent. See [verification.md](docs/verification.md).
 
 See [AI_USAGE.md](AI_USAGE.md) for tool use and corrections, and [the walkthrough guide](docs/walkthrough.md) for a 5–8 minute recording plan.

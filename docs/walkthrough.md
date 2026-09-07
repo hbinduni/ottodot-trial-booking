@@ -12,20 +12,20 @@ Record your own screen and explanation. Use the points below as prompts, not a s
 
 ## 0:00–0:40: Scope and decision
 
-Show the initial UI and the three-of-four fractions roster. Explain that this implements trial booking only and prioritizes backend invariants. State that a pending booking does not own a seat; confirmation happens at payment completion.
+Show Explore classes and briefly point out My bookings and Teacher roster. Open the three-of-four fractions roster. Explain that this implements trial booking only and prioritizes backend invariants. State that a pending booking does not own a seat; confirmation happens at payment completion.
 
 ## 0:40–1:35: Normal flow, failure, duplicate
 
-Use Amy → Ava → Space explorers. Continue to payment, simulate failure, and show that Ava is absent from the roster. Retry successfully and show Ava confirmed. Open the same booking again and show the same reference and payment history.
+In Explore classes, use Amy → Ava → Space explorers → Book trial. Simulate failure and explain that Ava is not enrolled. Retry successfully and show Ava confirmed. Close the panel, open My bookings, and reopen the same booking to show its unchanged reference and payment history. Close the panel before switching to Teacher roster to show Ava.
 
 Explain that booking status is the enrollment result, while payment history records each attempt.
 
 ## 1:35–3:05: Required last-seat race
 
-- Tab A: Amy → Ava → Fun with fractions → continue to payment.
-- Tab B: Ben → Noah → Fun with fractions → continue to payment.
+- Tab A: Explore classes → Amy → Ava → Fun with fractions → Book trial.
+- Tab B: Explore classes → Ben → Noah → Fun with fractions → Book trial.
 - Complete B successfully, then A successfully.
-- Show B confirmed, A refund-required, and exactly four children on the fractions roster.
+- Show B confirmed and A refund-required. Close the panel, open Teacher roster, and select Fun with fractions to show exactly four children.
 
 Explain that the demo records an obligation to refund, not a completed refund. Neither tab's earlier availability snapshot decides the outcome.
 

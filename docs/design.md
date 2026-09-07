@@ -30,4 +30,6 @@ Tests use the real SQLite schema and Hono app. Check failure, duplicate submissi
 
 ## UI direction
 
-White (#ffffff), pale blue (#edf5fc), navy (#183b56), blue (#1763a6), green (#16634b), and red (#a52a3a). System sans-serif for reliable offline rendering. Left-aligned class list beside a booking panel; roster below. Four visible seat markers explain the domain constraint. No decorative assets or animation.
+White, pale blue, dark navy (#202d48), and primary blue (#3864ed), with green/red status treatments. Local sans-serif fonts keep rendering independent of a font service. A responsive app shell separates class discovery, family booking history, and teacher rosters. Class cards use two compact generated WebP illustrations, subject filters, and four visible seat markers. Lucide provides consistent icons.
+
+The booking panel uses a native modal dialog for keyboard focus containment and Escape handling. Hash routes restore its booking ID after reload; per-tab session storage preserves demo identity and unresolved payment commands. Recording a result updates the open panel before refreshing server snapshots. Roster requests are independent of parent data, so a failed teacher request does not prevent class discovery. The selected roster and occupancy come from one API response; class selectors show capacity rather than potentially stale confirmed counts.

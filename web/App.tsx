@@ -1,157 +1,217 @@
+import {
+  ArrowUpRight,
+  BookOpen,
+  Compass,
+  GraduationCap,
+  Leaf,
+  RefreshCw,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Bootstrap, Roster } from "../shared/types";
+import type { Bootstrap } from "../shared/types";
 import { api, errorMessage } from "./api";
+import { navigate, useRoute } from "./navigation";
 import { ParentBooking } from "./ParentBooking";
+import { TeacherRoster } from "./TeacherRoster";
+
+const pages = [
+  { id: "classes", title: "Explore classes", icon: Compass },
+  { id: "bookings", title: "My bookings", icon: BookOpen },
+  { id: "roster", title: "Teacher roster", icon: Users },
+] as const;
 
 export function App() {
   const [data, setData] = useState<Bootstrap | null>(null);
-  const [rosters, setRosters] = useState<Roster[]>([]);
-  const [parentId, setParentId] = useState("parent-amy");
+  const [parentId, setParentId] = useState(
+    () => sessionStorage.getItem("ottodot-parent") ?? "parent-amy",
+  );
   const [revision, setRevision] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const route = useRoute();
+  const currentPage = pages.find((page) => page.id === route.view) ?? pages[0];
+  const parent = data?.parents.find((p) => p.id === parentId);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: revision deliberately invalidates the server snapshot after a mutation or manual refresh.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: revision explicitly invalidates the server snapshot.
   useEffect(() => {
     const controller = new AbortController();
-    async function load() {
-      try {
-        const next = await api<Bootstrap>("/api/bootstrap", {
-          signal: controller.signal,
-        });
-        const rows = await Promise.all(
-          next.classes.map((c) =>
-            api<Roster>(`/api/classes/${c.id}/roster`, {
-              signal: controller.signal,
-            }),
-          ),
-        );
+    setRefreshing(true);
+    void api<Bootstrap>("/api/bootstrap", { signal: controller.signal })
+      .then((next) => {
         if (controller.signal.aborted) return;
         setData(next);
-        setRosters(rows);
         setError("");
-      } catch (cause) {
+        setParentId((current) =>
+          next.parents.some((p) => p.id === current)
+            ? current
+            : (next.parents[0]?.id ?? ""),
+        );
+      })
+      .catch((cause) => {
         if (!controller.signal.aborted) setError(errorMessage(cause));
-      }
-    }
-    void load();
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setRefreshing(false);
+      });
     return () => controller.abort();
   }, [revision]);
 
   return (
-    <>
-      <header className="header">
-        <a className="brand" href="/" aria-label="Ottodot home">
+    <div className="app-shell">
+      <aside className="sidebar">
+        <a className="brand" href="#/classes" aria-label="Ottodot home">
           <span className="brand-mark" aria-hidden="true">
             o
           </span>
-          ottodot<span className="brand-dot">.</span>
+          ottodot<span className="brand-period">.</span>
         </a>
-        <span className="demo-label">Take-home demo</span>
-      </header>
-      <main>
-        <div className="intro">
-          <div>
-            <h1>
-              A little curiosity.
-              <br />A new favourite class.
-            </h1>
-            <p>
-              Try a live science or math class, with just four children in each
-              group.
-            </p>
-          </div>
-          <div className="demo-controls">
-            <label htmlFor="parent">Demo parent</label>
-            <select
-              id="parent"
-              value={parentId}
-              onChange={(event) => setParentId(event.target.value)}
-            >
-              {data?.parents.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <small>
-              Switch families to explore the demo. All people and payments are
-              fictional.
-            </small>
-          </div>
+        <div className="workspace-label">
+          <GraduationCap size={18} /> Family learning space
         </div>
-        {error && (
-          <p className="error" role="alert">
-            {error}{" "}
-            <button
-              type="button"
-              onClick={() => setRevision((value) => value + 1)}
+        <nav aria-label="Main navigation">
+          {pages.map(({ id, title, icon: Icon }) => (
+            <a
+              key={id}
+              href={`#/${id}`}
+              className={`nav-link ${route.view === id ? "active" : ""}`}
+              aria-current={route.view === id ? "page" : undefined}
+              onClick={(event) => {
+                if (busy) event.preventDefault();
+              }}
             >
-              Try again
-            </button>
+              <Icon size={20} strokeWidth={1.8} />
+              <span>{title}</span>
+              {route.view === id && <span className="nav-dot" />}
+            </a>
+          ))}
+        </nav>
+        <div className="sidebar-note">
+          <span className="note-icon">
+            <Leaf size={22} />
+          </span>
+          <h3>
+            Small groups.
+            <br />
+            Big possibilities.
+          </h3>
+          <p>
+            Just four learners in every trial class. More room for every
+            question.
           </p>
-        )}
-        {!data ? (
-          <p role="status">Loading trial classes…</p>
-        ) : (
-          <ParentBooking
-            key={parentId}
-            data={data}
-            parentId={parentId}
-            revision={revision}
-            refresh={() => setRevision((value) => value + 1)}
-          />
-        )}
-        <section className="roster-section" aria-labelledby="roster-heading">
-          <div className="section-heading">
-            <div>
-              <h2 id="roster-heading">Teacher roster</h2>
-              <p>
-                Confirmed children only. Pending and failed bookings do not
-                appear here.
-              </p>
-            </div>
+          <span className="note-seats" aria-hidden="true">
+            {["A", "B", "C", "D"].map((letter) => (
+              <span key={letter}>{letter}</span>
+            ))}
+          </span>
+        </div>
+        <div className="sidebar-footer">
+          <ShieldCheck size={17} />
+          <span>
+            Trial booking demo<small>Synthetic families & payments</small>
+          </span>
+        </div>
+      </aside>
+      <div className="app-main">
+        <header className="topbar">
+          <div className="breadcrumb">
+            <span>Workspace</span>
+            <span aria-hidden="true">/</span>
+            <strong>{currentPage.title}</strong>
+          </div>
+          <div className="topbar-actions">
+            <span className="demo-indicator">
+              <span /> Demo mode
+            </span>
             <button
               type="button"
-              className="secondary"
+              className="refresh-button"
+              disabled={busy || refreshing}
               onClick={() => setRevision((value) => value + 1)}
+              aria-label="Refresh data"
             >
-              Refresh data
+              <RefreshCw size={17} className={refreshing ? "spinning" : ""} />
+              <span>Refresh</span>
             </button>
+            <div className="account">
+              <span className="avatar account-avatar" aria-hidden="true">
+                {parent?.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join("") ?? "AC"}
+              </span>
+              <div>
+                <label htmlFor="parent">Demo parent</label>
+                <select
+                  id="parent"
+                  value={parentId}
+                  disabled={busy || Boolean(route.bookingId) || !data}
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    sessionStorage.setItem("ottodot-parent", id);
+                    setParentId(id);
+                    navigate(route.view);
+                  }}
+                >
+                  {data?.parents.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-          <div className="roster-grid">
-            {rosters.map((roster) => (
-              <article className="roster" key={roster.trialClass.id}>
-                <h3>
-                  {roster.trialClass.title}
-                  <span className="roster-count">
-                    {roster.students.length} / 4
-                  </span>
-                </h3>
-                {roster.students.length ? (
-                  <ul>
-                    {roster.students.map((student) => (
-                      <li key={student.id}>
-                        <span className="avatar" aria-hidden="true">
-                          {student.name.charAt(0)}
-                        </span>
-                        {student.name}
-                        <span className="roster-confirmed">Confirmed</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No confirmed children yet.</p>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
-      </main>
-      <footer>
-        Synthetic data · Mock payments · No real authentication
-        <br />
-        Built for the Ottodot trial booking take-home.
-      </footer>
-    </>
+        </header>
+        <main id="main-content">
+          {error && (
+            <div className="alert error" role="alert">
+              {error}
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setRevision((value) => value + 1)}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          {!data ? (
+            <div className="loading-state" role="status">
+              <RefreshCw className="spinning" size={24} />
+              <p>Getting your learning space ready…</p>
+            </div>
+          ) : route.view === "roster" ? (
+            <TeacherRoster classes={data.classes} revision={revision} />
+          ) : (
+            <ParentBooking
+              key={parentId}
+              data={data}
+              parentId={parentId}
+              route={route}
+              revision={revision}
+              busy={busy}
+              setBusy={setBusy}
+              refresh={() => setRevision((value) => value + 1)}
+            />
+          )}
+        </main>
+        <footer className="app-footer">
+          <span>Made for curious minds.</span>
+          <span>
+            No real charges or authentication.
+            <a
+              href="https://github.com/hbinduni/ottodot-trial-booking"
+              target="_blank"
+              rel="noreferrer"
+            >
+              About this demo <ArrowUpRight size={13} />
+            </a>
+          </span>
+        </footer>
+      </div>
+    </div>
   );
 }

@@ -1,10 +1,23 @@
+import {
+  ArrowRight,
+  CheckCircle2,
+  CircleAlert,
+  Clock3,
+  CreditCard,
+  FlaskConical,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
 import { useState } from "react";
 import type {
   BookingDetails,
   PaymentOutcome,
   PaymentResult,
+  TrialClass,
 } from "../shared/types";
 import { ApiError, api, errorMessage, parentHeaders } from "./api";
+import { ClassSchedule } from "./ClassCard";
+import { navigate } from "./navigation";
 import { refundMessage, statusLabels } from "./status-message";
 
 interface OutstandingPayment {
@@ -26,7 +39,7 @@ function outstandingPayment(storageKey: string): OutstandingPayment | null {
     )
       return { key: saved.key, outcome: saved.outcome };
   } catch {
-    /* Invalid local draft is not a payment result. */
+    /* A malformed local draft is not proof of a payment result. */
   }
   sessionStorage.removeItem(storageKey);
   return null;
@@ -34,18 +47,24 @@ function outstandingPayment(storageKey: string): OutstandingPayment | null {
 
 export function PaymentPanel({
   booking,
+  trialClass,
   parentId,
+  setBusy,
+  onRecorded,
   refresh,
 }: {
   booking: BookingDetails;
+  trialClass?: TrialClass;
   parentId: string;
+  setBusy: (busy: boolean) => void;
+  onRecorded: (result: PaymentResult) => void;
   refresh: () => void;
 }) {
   const storageKey = `ottodot-payment:${booking.id}`;
   const [outstanding, setOutstanding] = useState(() =>
     outstandingPayment(storageKey),
   );
-  const [busy, setBusy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [resultMessage, setResultMessage] = useState("");
   const terminal =
@@ -55,10 +74,11 @@ export function PaymentPanel({
   async function pay(outcome: PaymentOutcome) {
     const request = outstanding ?? { key: crypto.randomUUID(), outcome };
     setBusy(true);
+    setSubmitting(true);
     setError("");
     setResultMessage("");
     try {
-      // Save before sending so a lost response can be retried after a page reload.
+      // Persist the exact command before sending so a lost response survives reloads.
       sessionStorage.setItem(storageKey, JSON.stringify(request));
       setOutstanding(request);
       const result = await api<PaymentResult>(
@@ -79,7 +99,7 @@ export function PaymentPanel({
           ? "Original payment result recovered. No additional payment was recorded."
           : "Mock payment result recorded.",
       );
-      refresh();
+      onRecorded(result);
     } catch (cause) {
       if (cause instanceof ApiError && cause.status < 500) {
         sessionStorage.removeItem(storageKey);
@@ -90,100 +110,170 @@ export function PaymentPanel({
         `${errorMessage(cause)}${!(cause instanceof ApiError) || cause.status >= 500 ? " The outcome is unknown. Retry the same request below." : ""}`,
       );
     } finally {
+      setSubmitting(false);
       setBusy(false);
     }
   }
 
+  const StatusIcon =
+    booking.status === "confirmed"
+      ? CheckCircle2
+      : booking.status === "pending_payment"
+        ? Clock3
+        : CircleAlert;
   return (
     <div className="payment-panel">
-      <span className={`badge ${booking.status}`}>
-        {statusLabels[booking.status]}
-      </span>
-      <h2>{booking.studentName}’s trial class</h2>
-      <p className="chosen-class">{booking.classTitle}</p>
-      {booking.status === "pending_payment" && (
-        <p>
-          The seat is still available to other parents until this booking is
-          confirmed.
-        </p>
-      )}
-      {booking.status === "payment_failed" && (
-        <p>
-          The last mock payment failed. Your child is not enrolled. You can try
-          again; availability will be checked again.
-        </p>
-      )}
-      {booking.status === "confirmed" && (
-        <p className="success-copy">
-          You’re booked! {booking.studentName} is on the teacher’s roster.
-        </p>
-      )}
-      {booking.status === "refund_required" && (
-        <p className="refund-copy">
-          {refundMessage(last?.refundReason ?? null)}
-        </p>
-      )}
+      <div className="booking-preview">
+        <div className="booking-preview-top">
+          <span className="avatar avatar-0">
+            {booking.studentName.charAt(0)}
+          </span>
+          <span>
+            <small>Trial class for</small>
+            <strong>{booking.studentName}</strong>
+          </span>
+          <span className={`badge ${booking.status}`}>
+            <span />
+            {statusLabels[booking.status]}
+          </span>
+        </div>
+        <h3>{booking.classTitle}</h3>
+        {trialClass && <ClassSchedule startsAt={trialClass.startsAt} />}
+      </div>
+      <div className={`payment-state ${booking.status}`}>
+        <span className="payment-state-icon">
+          <StatusIcon size={25} />
+        </span>
+        <div>
+          <h3>
+            {booking.status === "confirmed"
+              ? "You're booked!"
+              : booking.status === "refund_required"
+                ? "A refund is required"
+                : booking.status === "payment_failed"
+                  ? "Let's give that another try"
+                  : "Ready when you are"}
+          </h3>
+          {booking.status === "pending_payment" && (
+            <p>
+              A seat isn't reserved yet. Complete a mock payment to check
+              availability and confirm the booking.
+            </p>
+          )}
+          {booking.status === "payment_failed" && (
+            <p>
+              The last mock payment failed. {booking.studentName} is not
+              enrolled. You can retry, and we'll check for a seat again.
+            </p>
+          )}
+          {booking.status === "confirmed" && (
+            <p>
+              {booking.studentName} is on the teacher's roster. Your place in{" "}
+              {booking.classTitle} is confirmed.
+            </p>
+          )}
+          {booking.status === "refund_required" && (
+            <p>{refundMessage(last?.refundReason ?? null)}</p>
+          )}
+        </div>
+      </div>
       {outstanding ? (
         <div className="pending-request">
+          <RotateCcw size={20} />
+          <h3>Recover your payment result</h3>
           <p>
-            A payment request may already have reached the server. Recover its
-            result before starting another attempt.
+            The previous request may have reached the server. Retry it with the
+            same key before starting another attempt.
           </p>
           <button
             type="button"
-            className="primary"
-            disabled={busy}
+            className="button primary full-width"
+            disabled={submitting}
             onClick={() => void pay(outstanding.outcome)}
           >
-            {busy ? "Recovering result…" : "Retry same payment request"}
+            {submitting ? "Recovering result…" : "Retry same payment request"}
           </button>
         </div>
-      ) : (
-        !terminal && (
+      ) : !terminal ? (
+        <section className="payment-simulator" aria-label="Mock payment">
+          <div className="simulator-heading">
+            <CreditCard size={19} />
+            <h3>Complete your booking</h3>
+            <span className="simulator-badge">
+              <FlaskConical size={12} />
+              Simulator
+            </span>
+          </div>
+          <p>
+            This is a mock payment. Choose a result to see how the booking
+            responds.
+          </p>
           <div className="payment-actions">
             <button
               type="button"
-              className="primary"
-              disabled={busy}
+              className="button primary full-width"
+              disabled={submitting}
               onClick={() => void pay("succeeded")}
             >
-              {busy ? "Recording…" : "Simulate successful payment"}
+              {submitting
+                ? "Recording payment…"
+                : "Simulate successful payment"}
+              <ArrowRight size={16} />
             </button>
             <button
               type="button"
-              className="secondary"
-              disabled={busy}
+              className="button secondary full-width"
+              disabled={submitting}
               onClick={() => void pay("failed")}
             >
               Simulate failed payment
             </button>
           </div>
-        )
+          <small className="mock-note">
+            <ShieldCheck size={14} />
+            No card details. No real charges.
+          </small>
+        </section>
+      ) : (
+        <button
+          type="button"
+          className="button secondary full-width"
+          onClick={() => navigate("bookings")}
+        >
+          View my bookings <ArrowRight size={16} />
+        </button>
       )}
-      <small className="mock-note">
-        Mock payment only. No card details or real charges.
-      </small>
       {error && (
-        <p className="error" role="alert">
+        <p className="alert error" role="alert">
           {error}
         </p>
       )}
-      {resultMessage && <p role="status">{resultMessage}</p>}
+      {resultMessage && (
+        <p className="result-message" role="status">
+          <CheckCircle2 size={15} />
+          {resultMessage}
+        </p>
+      )}
       <details className="payment-history">
         <summary>Payment history ({booking.paymentAttempts.length})</summary>
         {booking.paymentAttempts.length ? (
           <ol>
             {booking.paymentAttempts.map((attempt) => (
               <li key={attempt.id}>
-                <strong>
-                  {attempt.outcome === "succeeded"
-                    ? "Payment succeeded"
-                    : "Payment failed"}
-                </strong>
-                <span>Booking: {statusLabels[attempt.resultingStatus]}</span>
-                <time dateTime={attempt.createdAt}>
-                  {new Date(attempt.createdAt).toLocaleString()}
-                </time>
+                <span className={`history-dot ${attempt.outcome}`} />
+                <div>
+                  <strong>
+                    {attempt.outcome === "succeeded"
+                      ? "Payment succeeded"
+                      : "Payment failed"}
+                  </strong>
+                  <span className="history-booking-state">
+                    Booking: {statusLabels[attempt.resultingStatus]}
+                  </span>
+                  <time dateTime={attempt.createdAt}>
+                    {new Date(attempt.createdAt).toLocaleString()}
+                  </time>
+                </div>
               </li>
             ))}
           </ol>
@@ -191,9 +281,10 @@ export function PaymentPanel({
           <p>No payment attempts recorded.</p>
         )}
       </details>
-      <small className="booking-reference">
-        Booking reference: {booking.id}
-      </small>
+      <div className="booking-reference">
+        <span className="reference-label">Booking reference</span>
+        <code>{booking.id}</code>
+      </div>
     </div>
   );
 }
