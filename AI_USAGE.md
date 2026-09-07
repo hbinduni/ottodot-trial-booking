@@ -38,4 +38,6 @@ At the candidate's request, Codex added the Cloudflare deployment target: a Work
 - Used two browser tabs to reproduce B-before-A, checked the confirmed roster, and verified failed-payment retry and duplicate reopening.
 - Dropped a payment response after server commit, reloaded the browser, and retried the saved key to verify recovery without another attempt.
 
-See [docs/verification.md](docs/verification.md) for the verification record. The repository is public at [hbinduni/ottodot-trial-booking](https://github.com/hbinduni/ottodot-trial-booking). Candidate review and the narrated walkthrough remain separate submission steps.
+At the candidate's request, Codex published the walkthrough MP4 and captions as [GitHub Release assets](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1) and added a [browser player](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html). The player streams the GitHub-hosted file and keeps the generated-voice disclosure visible.
+
+See [docs/verification.md](docs/verification.md) for the verification record. The repository is public at [hbinduni/ottodot-trial-booking](https://github.com/hbinduni/ottodot-trial-booking). Candidate review, the personal AI reflection, and sending the submission remain separate steps.

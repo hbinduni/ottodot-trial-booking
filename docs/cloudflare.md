@@ -51,6 +51,7 @@ The recorded walkthrough demonstrates the original Bun implementation. Its payme
 
 - Initial version: `de97d425-1c34-48c8-86b7-2a8e1c502ecc`.
 - Verified redeployment: `023c2146-8a3c-4ca6-8375-edb97f627109`.
+- Walkthrough player and WebVTT captions added: `f509c1cb-59b8-4877-bfae-3075799a6f6e`. The MP4 is hosted in a GitHub Release and loaded by `/walkthrough.html`; it is not part of the Worker asset upload.
 - Live HTML, JavaScript, CSS, and both illustrations matched the local build byte-for-byte.
 - Browser-origin API checks verified duplicate booking, failed payment followed by successful retry, identical-key replay, confirmed-only roster, oversized input rejection, and HTTP 404 for the test SQL endpoint.
 - Leo's Space explorers booking and both payment attempts retained their IDs after redeployment; replay still returned the original successful attempt. The live teacher view showed Leo and Mia, 2/4 confirmed. Fun with fractions remained 3/4 confirmed.

@@ -1,8 +1,10 @@
-# Walkthrough guide: target 6 minutes 30 seconds
+# Video walkthrough and recording guide
 
-Record your own screen and explanation. Use the points below as prompts, not a script to read verbatim. Verify that you can explain the transaction and the real-payment boundary before submitting.
+[Watch the walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) or [download it from GitHub](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1). It runs for 6 minutes 47 seconds and includes captions and chapter navigation. No sign-in is needed.
 
-At the candidate's request, a generated-English-voice review copy was also prepared with automated app interactions and captions. Its [transcript](narration.md) discloses the voice and AI assistance. Review that copy before choosing it for submission; the personal recording guide below remains available if you prefer your own narration.
+The candidate requested generated English narration. The video and [transcript](narration.md) disclose the synthetic voice and AI assistance; this is not the candidate speaking. The recording shows the local Bun/SQLite implementation. Cloudflare runs the same booking rules using Durable Object transactions, as explained in the [deployment runbook](cloudflare.md).
+
+The guide below is available if you prefer to record your own explanation, aiming for about 6 minutes 30 seconds. Use it as prompts, and make sure you can explain the transaction and real-payment boundary before the interview.
 
 ## Prepare
 
@@ -72,6 +74,6 @@ Explain actual AI usage in your own words, including one genuine correction or r
 - Review the code and make the personal AI reflection accurate.
 - Include total time spent, including your review and recording, within four hours.
 - Publish the reviewed code to a public GitHub repository.
-- Record 5–8 minutes with your own narration.
+- Include a 5–8 minute walkthrough. The published copy uses clearly labeled generated narration; you can replace it with your own recording if preferred.
 - Open the repository and video links without signing in to check reviewer access.
 - Send both links to Ottodot within five calendar days of the invitation's receipt date. The forwarded brief alone does not establish that receipt date.

@@ -4,7 +4,9 @@ A take-home project for booking children's trial classes. Parents choose a child
 
 The interesting part is what happens when two parents want the last seat. This project focuses on getting that right, along with duplicate bookings, failed payments, and retries after a lost response.
 
-**[Open the live demo](https://ottodot-trial-booking.lina-duni.workers.dev)** · [Run locally](#run-locally) · [Deploy to Cloudflare](#cloudflare-deployment) · [AI usage](AI_USAGE.md)
+**[Open the live demo](https://ottodot-trial-booking.lina-duni.workers.dev)** · **[Watch the walkthrough · 6:47](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html)** · [Run locally](#run-locally) · [Deploy to Cloudflare](#cloudflare-deployment)
+
+The walkthrough has generated English narration, captions, and chapter navigation. You can also [download the MP4 from GitHub](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1) or [read the transcript](docs/narration.md). See [AI usage](AI_USAGE.md) for the disclosure.
 
 ## Try it out
 
@@ -219,6 +221,6 @@ The next priorities would be authenticated roles, payment reconciliation and ref
 
 The project was built with substantial AI assistance. [AI_USAGE.md](AI_USAGE.md) explains what Codex helped with, the candidate's decisions, and corrections made during review.
 
-Active work was estimated at **about two and a quarter hours** across implementation, UI changes, tests, documentation, video preparation, and deployment on 7–8 September 2026. This excludes idle time and candidate review; it isn't a precise time log. Further review and editing count toward the task's four-hour cap.
+Active work was estimated at **about two and a half hours** across implementation, UI changes, tests, documentation, video preparation and publishing, and deployment on 7–8 September 2026. This excludes idle time and candidate review; it isn't a precise time log. Further review and editing count toward the task's four-hour cap.
 
-The generated-voice walkthrough has a [transcript](docs/narration.md) and a [walkthrough guide](docs/walkthrough.md). The video file is kept outside Git and still needs a separately accessible hosting link for submission.
+The [video walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) loads its MP4 from a public [GitHub Release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1). The release also includes captions and checksums. The [walkthrough guide](docs/walkthrough.md) includes questions to rehearse and notes for recording your own narration.

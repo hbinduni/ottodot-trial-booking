@@ -37,7 +37,7 @@ These browser checks were performed using Playwright during development; they ar
 
 ## Submission status
 
-The implementation is published at [hbinduni/ottodot-trial-booking](https://github.com/hbinduni/ottodot-trial-booking). Candidate code review, final personal AI reflection, and public video hosting are not claimed complete by this record. Update the final time total after that work.
+The implementation is published at [hbinduni/ottodot-trial-booking](https://github.com/hbinduni/ottodot-trial-booking). Candidate code review and the final personal AI reflection remain separate submission steps. Public video hosting is recorded below.
 
 ## Generated walkthrough, 8 September 2026
 
@@ -50,7 +50,7 @@ At the candidate's explicit request, a video with generated English narration wa
 - The complete MP4 decoded without media errors. Browser playback loaded a 407.45-second, 1080p stream without errors. Sampled app, code, test, and closing frames were inspected for legibility.
 - `bun run check:all:fix` passed after documentation and generated-artifact exclusions were added: 30 tests, 99 assertions, lint, types, and build.
 
-The video and local review player are generated artifacts, excluded from Git. Candidate review and a shareable hosting link remain separate from creating the file.
+The video and local review player are generated artifacts, excluded from Git. The later public upload is recorded below.
 
 ## Cloudflare deployment, 8 September 2026
 
@@ -66,3 +66,14 @@ The candidate completed Wrangler's local OAuth browser login and selected the wo
 - Hosted smoke data remains usable: Space explorers 2/4 confirmed (Mia and Leo), Fun with fractions 3/4 confirmed. The existing Bun development database was preserved.
 
 Cloudflare rejected Python urllib's default HTTP client with error 1010; normal browser requests and curl returned successful responses. Live functional verification used the browser, and asset checks used curl. A few browser locator checks initially used incorrect element roles/titles; inspecting the actual rendered navigation resolved those test errors.
+
+## Public video hosting, 8 September 2026
+
+- Published the 18,884,896-byte MP4, SRT captions, and checksums in the public [walkthrough-v1 GitHub Release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1). The MP4 remains outside Git history; no Git LFS setup is required.
+- An unauthenticated GitHub API request confirmed that the release was published and all three assets were uploaded. GitHub's video digest matched the local SHA-256: `adaa5139e6e3de196eecceace9f701888087fe21e24b1816caed0ce4c48545e0`.
+- The [public player](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) streams the file from its stable GitHub release URL. The page displays the generated-narration disclosure and explains that the recording shows the local Bun runtime.
+- Fresh browser contexts with no saved login verified playback of the 407.45-second, 1920 × 1080 video, seeking to the SQLite chapter, and loading all 79 WebVTT caption cues. Desktop and 390-pixel layouts had no horizontal overflow or page errors. Blocking the video request displayed the download fallback.
+- The repository gate passed 30 tests and 99 assertions, both TypeScript targets, Biome, and the frontend build. Documentation links, chapter time bounds, and player JavaScript syntax were checked. The initial lint check prompted adding an accessible text caption track alongside the captions already burned into the video.
+- Cloudflare version `f509c1cb-59b8-4877-bfae-3075799a6f6e` added the player and caption file. The app's live database health check still returned HTTP 200.
+
+Active project work is now estimated at approximately two and a half hours, including README revisions and video publishing, excluding idle time and candidate review. The published video uses generated narration; reviewing the explanation and sending the submission remain the candidate's steps.
