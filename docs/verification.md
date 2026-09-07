@@ -59,3 +59,5 @@ The revised MP4 is 19,118,169 bytes. Its SHA-256 is:
 ```
 
 The MP4, SRT captions, and checksums are distributed as [GitHub Release assets](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v2). Cloning the repository doesn't download the video or require Git LFS. The [transcript](narration.md) is included in the repository. The [original release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1) remains available.
+
+After publishing, an unauthenticated GitHub API request confirmed all three release assets and the matching MP4 checksum. A fresh browser session played the hosted 7:08 video, sought to the revised chapter, and loaded all 83 captions without errors. The hosted caption file matched the local file byte-for-byte, the public demo snapshot was unchanged, and the API health check returned `200`. Cloudflare version `ec3661d8-e86d-4f44-94bf-447bf44784a5` serves the revised player.

@@ -73,7 +73,8 @@ These are the versions and results recorded during deployment, not a live status
 | Initial app | `de97d425-1c34-48c8-86b7-2a8e1c502ecc` |
 | Redeployment used to check persistence | `023c2146-8a3c-4ca6-8375-edb97f627109` |
 | Walkthrough player and WebVTT captions | `f509c1cb-59b8-4877-bfae-3075799a6f6e` |
+| Revised 7:08 walkthrough and captions | `ec3661d8-e86d-4f44-94bf-447bf44784a5` |
 
 The deployed HTML, JavaScript, CSS, and illustrations matched the local build. Live checks covered duplicate booking, failed-payment retry, payment replay, the confirmed roster, oversized input rejection, and a `404` for the test-only SQL route. Leo's Space explorers booking and both payment-attempt IDs survived redeployment, and replay returned the same successful attempt.
 
-At that check, Space explorers had Mia and Leo confirmed, and Fun with fractions had three confirmed children. Visitors may have changed those counts since then. The walkthrough MP4 is hosted in a [GitHub Release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1); only the player and WebVTT captions are Worker assets.
+At that check, Space explorers had Mia and Leo confirmed, and Fun with fractions had three confirmed children. Visitors may have changed those counts since then. The revised walkthrough MP4 is hosted in a [GitHub Release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v2); only the player and WebVTT captions are Worker assets. The video update preserved the public demo snapshot, and the API health check returned `200`.
