@@ -4,7 +4,7 @@ A take-home project for booking children's trial classes. Parents choose a child
 
 The interesting part is what happens when two parents want the last seat. This project focuses on getting that right, along with duplicate bookings, failed payments, and retries after a lost response.
 
-**[Open the live demo](https://ottodot-trial-booking.lina-duni.workers.dev)** · **[Watch the walkthrough · 6:47](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html)** · [Run locally](#run-locally) · [Deploy to Cloudflare](#cloudflare-deployment)
+**[Open the live demo](https://ottodot-trial-booking.lina-duni.workers.dev)** · **[Watch the walkthrough · 6:47](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html)** · [How it works](#how-the-solution-works) · [Run locally](#run-locally) · [Deploy to Cloudflare](#cloudflare-deployment)
 
 The walkthrough has generated English narration, captions, and chapter navigation. You can also [download the MP4 from GitHub](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v1) or [read the transcript](docs/narration.md). See [AI usage](AI_USAGE.md) for the disclosure.
 
@@ -76,9 +76,53 @@ Start with a fresh local database and open two tabs:
 
 Opening checkout doesn't hold a seat. The first successful payment transaction to claim the remaining seat wins. The other booking records that a refund is needed; it does **not** claim a refund has been issued.
 
-## How bookings work
+## How the solution works
 
-The app uses React and Vite for the frontend, Hono for the API, and SQLite for storage. Locally, Bun opens the database file. On Cloudflare, one SQLite Durable Object holds all the demo classes and families. Both versions use the same booking service and SQL schema.
+The browser lets a parent choose a child, open a booking, and submit a mock payment. The server decides whether that payment can confirm a seat. Teachers see the confirmed bookings through a roster query, so there's no separate roster record or background sync to maintain.
+
+### How the pieces fit together
+
+The app uses React and Vite for the frontend, Hono for the API, and SQLite for storage. This is the deployed Cloudflare path:
+
+```mermaid
+flowchart TD
+    Browser["React app in the browser"]
+    Assets["Cloudflare static assets"]
+    Worker["Cloudflare Worker"]
+    Browser -->|"Load HTML, JavaScript, and CSS"| Assets
+    Browser -->|"Send /api/* requests"| Worker
+    Worker --> API
+    subgraph BookingStore["One Durable Object: ottodot-demo-v1"]
+        API["Hono API: validate requests and check demo identity"]
+        Service["Booking service: apply booking and payment rules"]
+        DB[("Persistent SQLite")]
+        API --> Service
+        Service --> DB
+    end
+```
+
+Every parent's API requests reach the same named Durable Object. It owns the database for all demo classes, which gives competing payments one shared place to check and claim seats. The Worker routes requests; the booking rules run inside the Durable Object.
+
+Locally, Bun runs the same Hono API and booking service against a SQLite file. A small storage interface lets the service use Bun's SQLite connection or Cloudflare's storage adapter. Both versions share the SQL schema and business rules; they have separate databases.
+
+### From choosing a class to joining the roster
+
+1. **Load the available choices.** React calls `GET /api/bootstrap` for the demo families, children, and classes, and loads the selected parent's bookings. The displayed seat count is a snapshot; the server checks availability again when handling a booking or payment.
+2. **Create or reopen a booking.** Clicking **Book trial** opens an existing booking if the browser already knows about it. Otherwise, it sends the child and class IDs to `POST /api/bookings`. The server checks ownership and returns any existing child/class booking. For a new booking, it rejects a full or started class, then creates `pending_payment`. This doesn't reserve a seat.
+3. **Submit a mock payment.** The parent chooses success or failure. The browser saves a unique request key and the chosen outcome before calling `POST /api/bookings/:id/payments`. The selected demo parent travels in `X-Demo-Parent-Id`; the request key travels in `Idempotency-Key`.
+4. **Decide the booking result atomically.** In one database transaction, the service handles replays, checks the booking and class, and saves the payment attempt alongside the new booking status. A failed payment leaves no seat allocated. A successful payment confirms the booking only if a seat is still available and the class hasn't started; otherwise, it records a refund obligation.
+5. **Show what the server saved.** The payment response includes the booking, the recorded attempt, and whether this was a replay. React shows that result and refreshes availability and booking details. Opening **Teacher roster** queries only `confirmed` bookings. Another tab sees changes when it loads or refreshes its data.
+
+### What is stored
+
+| Record | Its role |
+| --- | --- |
+| `parents` and `students` | Connect each child to the parent who can manage their bookings. |
+| `trial_classes` | Store the class title, subject, start time, and capacity of four. |
+| `bookings` | Connect one child to one class and store the current booking status. |
+| `payment_attempts` | Keep each payment key, mock outcome, resulting status, and any refund reason. A booking can have several attempts after failures. |
+
+Keeping payment history separate from the current booking explains both **what happened to each request** and **whether the child has a seat now**. Availability is calculated from confirmed bookings, rather than a separate seat counter that could drift out of sync.
 
 ### Booking states
 
@@ -119,7 +163,20 @@ Before sending a payment, the browser saves its key and intended outcome in `ses
 
 The Bun connection uses foreign keys, WAL mode, and a five-second busy timeout. If the database remains locked, the API returns `503` with `Retry-After: 1`; retry a payment with the same key. Cloudflare manages its own SQLite connections and serializes synchronous work within the Durable Object.
 
-See [the booking service](server/bookings.ts), [SQL schema](server/schema.sql), and [Cloudflare storage adapter](cloudflare/sql-database.ts) for the implementation. The transaction behavior follows the [Bun SQLite](https://bun.com/docs/runtime/sqlite#transactions) and [Cloudflare SQLite](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/) APIs.
+The transaction behavior follows the [Bun SQLite](https://bun.com/docs/runtime/sqlite#transactions) and [Cloudflare SQLite](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/) APIs.
+
+### Where to look in the code
+
+| Start here | What you'll find |
+| --- | --- |
+| [ParentBooking.tsx](web/ParentBooking.tsx) and [PaymentPanel.tsx](web/PaymentPanel.tsx) | The parent flow, payment submission, and recovery after a lost response. |
+| [TeacherRoster.tsx](web/TeacherRoster.tsx) | The teacher's view of confirmed learners. |
+| [app.ts](server/app.ts) | HTTP routes, request validation, demo identity checks, and error responses. |
+| [bookings.ts](server/bookings.ts) | The booking rules, payment transaction, idempotent replay, and roster queries. |
+| [schema.sql](server/schema.sql) | Tables, unique constraints, and capacity and booking-state triggers. |
+| [server/index.ts](server/index.ts) and [database.ts](server/database.ts) | The local Bun server and SQLite setup. |
+| [cloudflare/index.ts](cloudflare/index.ts) and [sql-database.ts](cloudflare/sql-database.ts) | Worker routing, Durable Object initialization, and the Cloudflare storage adapter. |
+| [concurrency.test.ts](tests/concurrency.test.ts) and [test-cloudflare.ts](scripts/test-cloudflare.ts) | Evidence for the last-seat race and payment replays across both runtimes. |
 
 ## API at a glance
 
