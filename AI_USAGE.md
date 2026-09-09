@@ -4,7 +4,7 @@ This project was built with substantial help from OpenAI Codex. Most implementat
 
 ## What the candidate directed
 
-The candidate accepted the proposed approach of allocating seats when payment succeeds, with `refund_required` for a successful payment that can no longer secure a seat. They requested a more complete app interface, generated English narration, a public GitHub repository, and deployment to their Cloudflare account. They completed the Wrangler browser login and chose the workers.dev address.
+The candidate accepted the proposed approach of allocating seats when payment succeeds, with `refund_required` for a successful payment that can no longer secure a seat. They requested a more complete app interface, a public GitHub repository, and deployment to their Cloudflare account. They completed the Wrangler browser login and chose the workers.dev address. After the initial generated narration, they supplied eight recordings of their own explanation for the replacement walkthrough.
 
 These were product and delivery decisions. The implementation and automated checks were AI-assisted.
 
@@ -27,11 +27,13 @@ Agent review and tests identified these corrections; the candidate provided the 
 
 ## Illustrations and narration
 
-The two class illustrations were generated and saved as WebP images. The walkthrough uses Microsoft Andrew Neural through `edge-tts`, automated browser capture against a separate demo database, and FFmpeg for assembly. The voice is generated, not the candidate speaking. That disclosure appears in the video and its player.
+The two class illustrations were generated and saved as WebP images. Screen interactions were captured with browser automation against a separate database containing synthetic families and mock payments.
 
-The final chapter was later revised to explain Cloudflare storage and close with a summary of the completed solution. The earlier demonstrations were retained.
+The current walkthrough, version 3, uses Heriyanto Binduni's own voice from eight supplied recordings. Codex helped trim pauses, normalize audio levels, match the footage to the narration, and prepare captions using automated transcription with corrections for readability and technical spelling. The recording plays at its original speaking speed and contains no generated or cloned speech. FFmpeg assembled the video.
 
-The [video and captions](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v2) are public GitHub Release assets. The [transcript](docs/narration.md) preserves the spoken wording.
+Versions 1 and 2 used Microsoft Andrew Neural through `edge-tts` and were labeled as generated narration. Those releases remain available as historical versions.
+
+The current [video and captions](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v3) are GitHub Release assets. The [transcript](docs/narration.md) follows the candidate's recording, with light edits for readability.
 
 ## What could improve the process
 

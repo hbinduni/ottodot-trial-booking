@@ -46,6 +46,22 @@ The deployed bundle contained neither the test fixture nor Bun's SQLite import. 
 
 ## Walkthrough video
 
+### Candidate voiceover, 10 September 2026
+
+The current [walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) uses Heriyanto Binduni's eight recordings. It runs for 7 minutes 49 seconds at 1920 × 1080, with H.264 video, AAC audio, eight chapters, and 104 English caption cues. Pauses were trimmed and volume balanced without changing the speaking speed. The captions, transcript, chapter timestamps, and narrator labels were rebuilt for this recording.
+
+The complete export decoded without errors or audio timestamp warnings. Samples from all eight chapters matched the edited source recordings, with correlation above 0.9998. Visual checks covered two frames from each chapter. A fresh isolated browser session verified playback, all eight chapter jumps, 104 loaded captions, and byte-range video requests. These checks used the local preview before publication.
+
+The three concurrency tests also passed again, with 25 assertions. Before publication, the full repository gate passed: Biome, both TypeScript targets, 30 tests with 99 assertions, and the Vite build. The MP4 is 18,311,310 bytes with SHA-256:
+
+```text
+8a70e0869e0a07e63a4b9a1b0d471c7174be8fa827d8c24578baf65fc35a2e31
+```
+
+The [version 3 release](https://github.com/hbinduni/ottodot-trial-booking/releases/tag/walkthrough-v3) contains the MP4, SRT and WebVTT captions, and SHA-256 checksums. The transcript is included in the repository. The older caption files remain available for cached players.
+
+### Previous generated narration, 8 September 2026
+
 The revised [walkthrough](https://ottodot-trial-booking.lina-duni.workers.dev/walkthrough.html) runs for 7 minutes 8 seconds at 1920 × 1080, with H.264 video and AAC audio. It retains the first 12 chapters of app interactions, code, test output, and tradeoffs. The final chapter explains the Cloudflare deployment, discloses AI assistance, and summarizes the completed solution.
 
 The revision uses the same generated English voice. All 83 caption cues were checked for order and timing. The complete MP4 decoded without errors, and frames from the new ending were inspected for legibility. Browser checks against a local preview confirmed playback, seeking to the final chapter, caption loading, and layouts at desktop and 390-pixel widths without page errors or horizontal overflow.

@@ -1,0 +1,313 @@
+WEBVTT
+
+00:00:01.106 --> 00:00:03.167
+Hello, my name is Heriyanto.
+
+00:00:03.447 --> 00:00:08.909
+I will walk through the trial-class booking solution and explain the main decisions,
+
+00:00:09.229 --> 00:00:14.136
+especially what happens when two parents compete for the last seat.
+
+00:00:14.458 --> 00:00:21.062
+The app was built using React and Hono at the backend,
+
+00:00:21.062 --> 00:00:24.622
+and we use SQLite for the DB.
+
+00:00:25.245 --> 00:00:28.865
+Why? Because that keeps the project very small,
+
+00:00:28.865 --> 00:00:32.333
+with the booking rules in one service
+
+00:00:32.333 --> 00:00:35.953
+and the important constraints in the database.
+
+00:00:37.284 --> 00:00:42.952
+A parent can choose a child, book a trial, and simulate the payment.
+
+00:00:42.952 --> 00:00:48.630
+The teacher dashboard will show the confirmed children only,
+
+00:00:48.630 --> 00:00:52.411
+where each class has four places.
+
+00:00:52.411 --> 00:00:57.833
+The screen recording uses synthetic families,
+
+00:00:57.833 --> 00:01:01.313
+and all the payments are mocked.
+
+00:01:01.867 --> 00:01:07.706
+OK, here, creating a booking will give a pending-payment status.
+
+00:01:08.173 --> 00:01:09.786
+It doesn't reserve a seat,
+
+00:01:09.786 --> 00:01:16.360
+and I chose to allocate the seat when a successful payment is processed.
+
+00:01:16.626 --> 00:01:20.802
+If payment fails, the child stays off this roster,
+
+00:01:20.802 --> 00:01:23.822
+and the same booking can be retried.
+
+00:01:24.102 --> 00:01:28.982
+A successful retry will check availability again before confirming.
+
+00:01:31.214 --> 00:01:35.953
+Reopening this child and class returns the existing booking.
+
+00:01:36.313 --> 00:01:41.106
+The database enforces one booking per child and class.
+
+00:01:41.106 --> 00:01:44.570
+Payment attempts are separate records,
+
+00:01:45.373 --> 00:01:51.567
+so a failed attempt remains in the history even after the booking becomes confirmed.
+
+00:01:52.233 --> 00:01:55.225
+This class starts with three confirmed children,
+
+00:01:55.905 --> 00:01:57.901
+so one seat remains.
+
+00:01:58.521 --> 00:02:04.437
+Parent A opens a booking first but doesn't pay.
+
+00:02:04.677 --> 00:02:07.277
+Parent B then opens another booking
+
+00:02:07.277 --> 00:02:11.253
+and completes the successful mock payment first.
+
+00:02:11.537 --> 00:02:13.803
+B's child gets the final seat.
+
+00:02:13.803 --> 00:02:18.756
+When A's successful payment is processed, the class is already full.
+
+00:02:18.756 --> 00:02:21.566
+The result is refund required,
+
+00:02:21.566 --> 00:02:26.408
+and A's child is excluded from the roster.
+
+00:02:26.408 --> 00:02:30.691
+The roster still contains exactly four children.
+
+00:02:30.691 --> 00:02:36.491
+I chose this outcome because payment success and enrollment success are separate facts.
+
+00:02:37.188 --> 00:02:42.108
+Recording a refund obligation preserves that distinction.
+
+00:02:42.719 --> 00:02:46.632
+It does not claim that a refund has been issued.
+
+00:02:47.152 --> 00:02:49.912
+A temporary seat hold is another option,
+
+00:02:49.912 --> 00:02:54.512
+but would need expiry and late-payment rules.
+
+00:02:55.429 --> 00:02:58.889
+The critical detail is where the capacity check happens.
+
+00:02:59.229 --> 00:03:04.109
+Locally, the service starts an immediate SQLite write transaction
+
+00:03:04.109 --> 00:03:07.209
+before reading the number of confirmed bookings.
+
+00:03:07.914 --> 00:03:11.354
+SQLite allows one writer at a time.
+
+00:03:11.674 --> 00:03:14.494
+If B gets the transaction first,
+
+00:03:14.734 --> 00:03:18.694
+B can read three confirmed bookings and confirm the fourth.
+
+00:03:18.694 --> 00:03:23.221
+A must wait to acquire its write transaction.
+
+00:03:23.221 --> 00:03:25.958
+After B commits, A reads four,
+
+00:03:25.958 --> 00:03:28.778
+so A cannot also take that seat.
+
+00:03:28.778 --> 00:03:33.849
+If the database remains busy, the API returns a retryable error.
+
+00:03:33.849 --> 00:03:40.509
+The booking update and payment-attempt insert are inside the same transaction.
+
+00:03:41.228 --> 00:03:47.090
+They commit together, or both roll back if an operation fails.
+
+00:03:47.534 --> 00:03:54.379
+Capacity triggers also reject a fifth confirmed booking on insert or update.
+
+00:03:54.379 --> 00:03:58.659
+That protects against a future writer bypassing the service.
+
+00:03:58.999 --> 00:04:04.399
+Disabling a button in React shouldn't protect against another browser or process.
+
+00:04:05.380 --> 00:04:10.260
+Another failure case is losing the response after the server commits.
+
+00:04:10.558 --> 00:04:15.379
+The browser cannot assume that means the payment failed.
+
+00:04:15.744 --> 00:04:19.775
+Before sending the request, it saves a unique payment key
+
+00:04:19.775 --> 00:04:24.303
+and the intended outcome in session storage.
+
+00:04:24.303 --> 00:04:27.823
+If the response is uncertain, it keeps that key.
+
+00:04:28.023 --> 00:04:32.103
+Retrying the same command returns the original attempt
+
+00:04:32.103 --> 00:04:34.503
+without recording another one.
+
+00:04:35.179 --> 00:04:38.079
+Using the key with different input returns a conflict.
+
+00:04:38.439 --> 00:04:42.219
+The replay check happens before rejecting a final booking,
+
+00:04:42.299 --> 00:04:45.239
+so a lost confirmation response can still be recovered.
+
+00:04:45.239 --> 00:04:48.476
+This solves repeated commands.
+
+00:04:48.476 --> 00:04:53.208
+The transaction handles competition for capacity.
+
+00:04:53.208 --> 00:04:55.008
+They solve different problems.
+
+00:04:55.983 --> 00:05:00.429
+The concurrency test starts eight independent processes,
+
+00:05:00.429 --> 00:05:05.447
+each with its own connection to the same SQLite database.
+
+00:05:05.691 --> 00:05:09.130
+They wait behind a readiness barrier,
+
+00:05:09.130 --> 00:05:12.067
+and then compete for one remaining seat.
+
+00:05:12.067 --> 00:05:18.528
+The test checks one confirmation, seven refund obligations, and a roster of four.
+
+00:05:18.828 --> 00:05:23.288
+Another test sends five concurrent copies of one payment key,
+
+00:05:23.288 --> 00:05:26.828
+and checks that only one attempt is stored.
+
+00:05:27.220 --> 00:05:33.270
+There are also tests for an insert failure rolling back the booking update,
+
+00:05:33.730 --> 00:05:37.950
+full and started classes, duplicate bookings, and ownership checks.
+
+00:05:37.950 --> 00:05:41.712
+These exercise the important failure paths,
+
+00:05:41.712 --> 00:05:45.712
+although they aren't a production load benchmark.
+
+00:05:46.679 --> 00:05:51.039
+The hosted version uses a Cloudflare Worker for the frontend
+
+00:05:51.039 --> 00:05:57.856
+and routes API requests to one shared SQLite backend called a Durable Object.
+
+00:05:58.056 --> 00:06:01.296
+It runs the same booking service and schema.
+
+00:06:01.776 --> 00:06:04.474
+The storage mechanism is different from Bun.
+
+00:06:04.674 --> 00:06:09.334
+The adapter uses Cloudflare's native synchronous transaction API
+
+00:06:09.334 --> 00:06:14.094
+to keep the database operations together and roll them back on an exception.
+
+00:06:14.608 --> 00:06:18.890
+All parents share that object because they compete
+
+00:06:18.890 --> 00:06:22.489
+for the same class capacity.
+
+00:06:22.829 --> 00:06:27.629
+One database per parent would break that coordination.
+
+00:06:28.189 --> 00:06:33.856
+A single shared object is simple for the demo, but also limits write throughput.
+
+00:06:34.970 --> 00:06:41.805
+For real use, I would add trusted authentication and verified payment-provider events,
+
+00:06:41.805 --> 00:06:45.400
+like using Google auth,
+
+00:06:45.400 --> 00:06:50.040
+and then we put the webhook to verify the payment
+
+00:06:50.040 --> 00:06:54.821
+when the payment returns success from a provider like Midtrans
+
+00:06:54.821 --> 00:07:00.296
+and others, including amount and currency checks.
+
+00:07:00.621 --> 00:07:03.443
+Refunds would need execution and reconciliation.
+
+00:07:03.963 --> 00:07:09.827
+Provider network calls should stay outside the short database transaction.
+
+00:07:10.267 --> 00:07:14.647
+I used Codex extensively for the implementation and testing,
+
+00:07:14.647 --> 00:07:19.694
+and directed the product and delivery choices.
+
+00:07:20.034 --> 00:07:25.554
+The repository documents that assistance under the AI guidance.
+
+00:07:25.906 --> 00:07:29.725
+The main decisions are to confirm seats automatically,
+
+00:07:30.265 --> 00:07:31.625
+preserve payment history,
+
+00:07:31.625 --> 00:07:35.445
+and make uncertain requests safe to retry.
+
+00:07:35.625 --> 00:07:38.505
+That keeps the roster correct while making unsuccessful
+
+00:07:38.505 --> 00:07:40.730
+enrollment explicit,
+
+00:07:40.730 --> 00:07:44.706
+and prevents more complications.
+
+00:07:46.146 --> 00:07:48.546
+Thank you for reviewing my solution.
